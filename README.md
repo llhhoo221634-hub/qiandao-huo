@@ -51,3 +51,14 @@ HUO_ROOT=$PWD HUO_CSV=../history.csv node collect.mjs
 | 页面上价突然变 `—` | 仓库里 `data.json` 还没生成 | 手动跑一次 workflow |
 
 `collector/state/skey.json` 里是千岛 H5 前端里的公开常量，不是账号密钥。
+
+## 安全说明
+
+- **不含任何密钥**：仓库里唯一的"凭据类"内容是 `collector/state/skey.json` 里的 skey，它是千岛 H5 前端 bundle 中的**公开常量**（任何人打开网页都能拿到），不属于私密凭据。GitHub token 只存在手机本地 `/root/workspace/gh/.token`（0600），不入库、不进日志。
+- **只读站点**：页面是纯静态，没有任何后端、表单、Cookie、登录态，不接收用户输入，因此没有服务端攻击面。
+- **XSS 防护**：所有来自接口的文本（规格名等）在写入 DOM 前经过 `esc()` 转义；页面带 CSP `default-src 'self'`，禁止外部脚本、外链资源与 form 提交。
+- **防嵌套/防 Referer 泄露**：`<meta name="referrer" content="no-referrer">`。
+- **Actions 最小权限**：定时采集已关闭，工作流改为 `contents: read` 并且只做验证不写回；仓库默认工作流权限设为 read。
+- **仓库安全开关**：Secret scanning + push protection 已开启，Dependabot alerts 与自动修复已开启，私有漏洞报告已开启。
+- **数据边界**：公开的只有价格、成交明细（火数/金额/规格）和时间戳，不含账号、订单号、昵称等任何个人信息。
+- 注意：这是**公开仓库**，代码与历史数据对所有人可见。如果以后要放私密逻辑，需转私有仓（Pages 需 Pro）或改用其他托管。
