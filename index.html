@@ -436,11 +436,23 @@ function render() {
   const chk = D.summary_check || {};
   const map = { agree: ['平台摘要一致', 'ok'], mismatch: ['摘要偏差 ×' + chk.ratio, 'warn'], unavailable: ['无平台摘要', ''], error: ['摘要校验失败', 'warn'] };
   const [ct, cc] = map[chk.status] || ['—', ''];
+  const ageMin0 = D.at ? (Date.now() - D.at) / 60000 : 999;
+  const staleCls = ageMin0 > 25 ? 'warn' : '';
+  const staleTxt = ageMin0 > 25 ? `数据停更 ${Math.round(ageMin0)} 分钟` : `更新 ${timeAgo(D.at)}`;
   $('badges').innerHTML = `
     <span class="badge ${cc}">${ct}</span>
     <span class="badge ok">成交明细口径</span>
     <span class="badge">${D.samples || 0} 笔样本</span>
-    <span class="badge">更新 ${timeAgo(D.at)}</span>`;
+    <span class="badge ${staleCls}">${staleTxt}</span>`;
+
+  // 采集停更检测：超过 25 分钟没新数据就在顶部明说，不装实时
+  const ageMin = D.at ? (Date.now() - D.at) / 60000 : 999;
+  if (ageMin > 25) {
+    setStatus(`停更 ${Math.round(ageMin)} 分钟`, 'stale');
+    $('main').style.opacity = '.55';
+  } else {
+    $('main').style.opacity = '1';
+  }
 
   drawChart();
 }
