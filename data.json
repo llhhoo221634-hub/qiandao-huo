@@ -1,32 +1,32 @@
 {
- "updatedAt": "2026-11-09T16:50:14.736Z",
- "at": 1794243014736,
+ "updatedAt": "2026-11-09T16:51:33.443Z",
+ "at": 1794243093443,
  "spuId": "836104794648117801",
  "league": "赛季",
  "fire_per_yuan": 421.763,
  "yuan_per_fire": 0.002371,
- "time": "2026/11/10 00:49:58",
+ "time": "2026/11/10 00:51:16",
  "samples": 100,
- "wavg_fire_per_yuan": 417.632,
- "median_fire_per_yuan": 419.933,
+ "wavg_fire_per_yuan": 417.264,
+ "median_fire_per_yuan": 420.875,
  "low_fire_per_yuan": 324.359,
  "high_fire_per_yuan": 434.735,
- "volume_fire": 2007700,
- "volume_yuan": 4810.91,
+ "volume_fire": 2074400,
+ "volume_yuan": 4975.22,
  "by_spec": [
   {
    "spec": "赛季/普通/支持所有物品交易/单笔交易",
    "league": "赛季",
-   "count": 58,
-   "fire_per_yuan": 420.942,
-   "volume_fire": 1044100
+   "count": 54,
+   "fire_per_yuan": 434.688,
+   "volume_fire": 989800
   },
   {
    "spec": "赛季/普通/仅支持神谱交易/单笔交易",
    "league": "赛季",
-   "count": 41,
+   "count": 45,
    "fire_per_yuan": 421.763,
-   "volume_fire": 933600
+   "volume_fire": 1054600
   },
   {
    "spec": "赛季/普通/支持所有物品交易/多笔交易",
@@ -43,17 +43,17 @@
  },
  "leagues": {
   "赛季": {
-   "ts": 1794242998000,
-   "time": "2026/11/10 00:49:58",
+   "ts": 1794243076000,
+   "time": "2026/11/10 00:51:16",
    "fire_per_yuan": 421.763,
    "yuan_per_fire": 0.002371,
-   "wavg_fire_per_yuan": 417.632,
-   "median_fire_per_yuan": 419.933,
+   "wavg_fire_per_yuan": 417.264,
+   "median_fire_per_yuan": 420.875,
    "low_fire_per_yuan": 324.359,
    "high_fire_per_yuan": 434.735,
    "samples": 100,
-   "volume_fire": 2007700,
-   "volume_yuan": 4810.91,
+   "volume_fire": 2074400,
+   "volume_yuan": 4975.22,
    "spec": "赛季/普通/仅支持神谱交易/单笔交易"
   }
  },
@@ -72,6 +72,10 @@
    },
    {
     "t": 1794242998000,
+    "v": 421.763
+   },
+   {
+    "t": 1794243076000,
     "v": 421.763
    }
   ]
