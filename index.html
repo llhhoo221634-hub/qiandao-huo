@@ -123,6 +123,7 @@
   .badge{font-size:11px;padding:4px 9px;border-radius:99px;border:1px solid var(--line);color:var(--ink2);background:var(--card)}
   .badge.ok{color:var(--down);border-color:color-mix(in srgb,var(--down) 30%,transparent);background:color-mix(in srgb,var(--down) 8%,transparent)}
   .badge.warn{color:#a9772a;border-color:rgba(201,162,39,.35);background:rgba(201,162,39,.1)}
+  .badge.up{color:var(--up)} .badge.down{color:var(--down)} .badge.flat{color:var(--muted)}
   .hidden{display:none!important}
   footer code{word-break:break-all}
 
@@ -190,9 +191,9 @@
   </div>
 </div>
 
-<h2>每日历史 <a href="./daily.json" target="_blank">daily.json ↗</a></h2>
+<h2>每日历史 <span id="dailyHint" style="font-weight:400"></span><a href="./daily.json" target="_blank">daily.json ↗</a></h2>
 <div class="box"><table id="dailyTable">
-  <thead><tr><th>日期</th><th>均价</th><th>低/高</th><th>笔数</th></tr></thead>
+  <thead><tr><th>日期</th><th>均价</th><th>低/高</th><th>涨跌</th></tr></thead>
   <tbody></tbody>
 </table></div>
 
@@ -207,7 +208,7 @@
   <div class="badges" id="badges"></div>
   <div>
     数据源：千岛 <code>get-spu-trading-history-list</code> 成交明细，主价取最新一笔，均值/中位数自算。<br>
-    手机端每 10 分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/YYYY-MM.jsonl</code>，日线永久累积在 <code>daily.json</code>。<br>
+    手机端每 10 分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/2026-11.jsonl</code> 这类文件，日线永久累积在 <code>daily.json</code>。<br>
     抓取失败时保留上一份并标记 STALE，不会静默伪装实时。
   </div>
 </footer>
@@ -401,10 +402,19 @@ function render() {
     : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">暂无成交</div>`;
 
   // 日线表（最近 10 天，倒序）
-  const dd = [...(D.daily || [])].reverse().slice(0, 10);
+  const all = D.daily || [];
+  const dd = all.map((r, i) => ({ r, prev: all[i - 1] })).reverse().slice(0, 10);
+  $('dailyHint').textContent = all.length ? `共 ${all.length} 天 · 累计 ${fmtInt(D.total_points || 0)} 点` : '';
   $('dailyTable').querySelector('tbody').innerHTML = dd.length
-    ? dd.map((r) => `<tr><td>${r.d.slice(5)}</td><td><b>${fmt(r.avg ?? r.close, 2)}</b></td>
-        <td style="color:var(--muted)">${fmt(r.low, 0)} / ${fmt(r.high, 0)}</td><td>${r.samples}</td></tr>`).join('')
+    ? dd.map(({ r, prev }) => {
+        let pct = null;
+        if (prev?.close) pct = ((r.close - prev.close) / prev.close) * 100;
+        const cls = pct == null ? 'flat' : pct > 0.05 ? 'up' : pct < -0.05 ? 'down' : 'flat';
+        const txt = pct == null ? '—' : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+        return `<tr><td>${r.d.slice(5)}</td><td><b>${fmt(r.avg ?? r.close, 2)}</b></td>
+        <td style="color:var(--muted)">${fmt(r.low, 0)} / ${fmt(r.high, 0)}</td>
+        <td><span class="badge ${cls}" style="border:0;background:transparent;padding:0">${txt}</span></td></tr>`;
+      }).join('')
     : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">今天刚开始记录</td></tr>`;
 
   // 校验徽章
