@@ -4,253 +4,463 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>初火源质 · 实时价</title>
+<meta name="theme-color" content="#f7f5f2">
 <style>
   :root{
-    --bg:#f7f7f5; --card:#fff; --ink:#1c1c1a; --muted:#8a8a84; --line:#e8e8e4;
-    --accent:#c8552c; --up:#c8552c; --down:#2f7d63; --warn:#b7791f; --ok:#2f7d63;
-    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --bg:#f6f4f1; --card:#fff; --ink:#1a1a1a; --ink2:#4a4a4a; --muted:#8b8b8b;
+    --line:#e8e4de; --line2:#f0ece6;
+    --accent:#c8552c; --accent-soft:#fbf0eb;
+    --up:#c0392b; --down:#1e8e5a;
+    --shadow:0 1px 2px rgba(60,40,20,.05), 0 12px 28px -18px rgba(60,40,20,.25);
+    --r:20px;
   }
-  @media (prefers-color-scheme:dark){
-    :root{--bg:#121211;--card:#1b1b1a;--ink:#f2f2ef;--muted:#8d8d86;--line:#2a2a28;--accent:#e2764c;}
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#131211; --card:#1c1a18; --ink:#f2efe9; --ink2:#c9c3ba; --muted:#8d8780;
+      --line:#2b2724; --line2:#241f1c; --accent:#e2714a; --accent-soft:#2a1c15;
+      --up:#f0705c; --down:#4cc08a;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 16px 32px -22px rgba(0,0,0,.8); }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  body{margin:0;background:var(--bg);color:var(--ink);
-    font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",system-ui,sans-serif;
-    padding:20px 16px 40px;}
-  .wrap{max-width:680px;margin:0 auto}
-  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
-  .brand{display:flex;align-items:baseline;gap:9px}
-  .brand h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px}
-  .brand span{font-size:12px;color:var(--muted)}
-  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
-    border:1px solid var(--line);background:var(--card);padding:5px 10px;border-radius:999px}
-  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
-  .dot.stale{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin-bottom:12px}
-  .hero .label{font-size:12px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
-  .price{display:flex;align-items:flex-end;gap:10px;margin:6px 0 2px}
-  .price b{font-size:42px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-1px}
-  .price em{font-style:normal;font-size:13px;color:var(--muted);padding-bottom:4px}
-  .delta{font-size:13px;font-variant-numeric:tabular-nums;margin-left:auto;padding-bottom:5px}
-  .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--muted)}
-  .sub{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12.5px;color:var(--muted)}
-  .sub b{font-family:var(--mono);font-weight:500;color:var(--ink)}
-  svg{display:block;width:100%;height:64px;margin-top:14px;overflow:visible}
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
-  .cell{background:var(--card);padding:13px 16px}
-  .cell .k{font-size:11.5px;color:var(--muted);margin-bottom:3px}
-  .cell .v{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
-  h2{font-size:12.5px;color:var(--muted);font-weight:500;margin:20px 2px 8px;letter-spacing:.3px}
-  table{width:100%;border-collapse:collapse;font-size:13.5px}
-  th{text-align:left;font-weight:500;color:var(--muted);font-size:11.5px;padding:0 0 8px}
-  td{padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
-  td.num{text-align:right;font-family:var(--mono)}
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
-  .badge.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,var(--line));background:color-mix(in srgb,var(--warn) 8%,transparent)}
-  .badge.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line));background:color-mix(in srgb,var(--ok) 8%,transparent)}
-  footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
-  button{font:inherit;font-size:13px;padding:9px 14px;border-radius:11px;border:1px solid var(--line);
-    background:var(--card);color:var(--ink);cursor:pointer;transition:.15s}
-  button:active{transform:scale(.98)}
-  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  button:disabled{opacity:.5}
-  a.btn{font-size:13px;padding:9px 14px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
-  .foot{font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.7}
-  .foot code{font-family:var(--mono);font-size:11px}
-  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:2px}
-  .seg button{border:0;background:transparent;padding:4px 11px;border-radius:8px;font-size:12.5px;color:var(--muted)}
-  .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.07);font-weight:500}
-  .seg .n{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px;font-variant-numeric:tabular-nums}
-  .seg button.on .n{color:var(--accent)}
-  .seg button.off{opacity:.4;cursor:default}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
+    font-variant-numeric:tabular-nums;
+    padding:18px 16px 40px; max-width:560px; margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+  /* ── header ── */
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:2px 2px 14px}
+  .brand{display:flex;align-items:baseline;gap:8px;min-width:0}
+  .brand h1{font-size:19px;margin:0;letter-spacing:-.01em;font-weight:600;white-space:nowrap}
+  .brand span{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:99px;
+    background:var(--card);border:1px solid var(--line);font-size:12px;color:var(--ink2);white-space:nowrap;box-shadow:var(--shadow)}
+  .dot{width:6px;height:6px;border-radius:99px;background:var(--down);box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 18%,transparent)}
+  .pill.stale .dot{background:#c9a227;box-shadow:0 0 0 3px rgba(201,162,39,.18)}
+  .pill.err .dot{background:var(--up);box-shadow:0 0 0 3px rgba(192,57,43,.18)}
+
+  /* ── hero ── */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+  .hero{padding:18px 18px 6px;margin-bottom:12px}
+  .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .hero-top>div:first-child{min-width:0}
+  .seg{display:inline-flex;background:var(--line2);border-radius:12px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;color:var(--muted);font:inherit;font-size:12px;
+    padding:6px 9px;border-radius:9px;cursor:pointer;transition:.18s;line-height:1;white-space:nowrap}
+  .seg button .n{font-size:10.5px;opacity:.75;margin-left:2px}
+  .seg button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .seg button.on .n{color:var(--accent);opacity:1}
+  .seg button.off{opacity:.35;cursor:default}
+
+  .label{font-size:12px;color:var(--muted);margin:12px 0 2px}
+  .big{display:flex;align-items:flex-end;gap:8px;line-height:1}
+  .big b{font-size:54px;font-weight:600;letter-spacing:-.03em}
+  .big i{font-style:normal;font-size:15px;color:var(--muted);padding-bottom:8px}
+  .delta{display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:600;
+    padding:3px 8px;border-radius:8px;margin-left:4px;transform:translateY(-14px)}
+  .delta.up{color:var(--up);background:color-mix(in srgb,var(--up) 10%,transparent)}
+  .delta.down{color:var(--down);background:color-mix(in srgb,var(--down) 10%,transparent)}
+  .delta.flat{color:var(--muted);background:var(--line2)}
+  .sub{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;font-size:12.5px;color:var(--muted);gap:10px}
+  .sub b{color:var(--ink2);font-weight:500}
+
+  .chart-wrap{margin:14px -6px 0;position:relative}
+  svg.chart{display:block;width:100%;height:150px;overflow:visible}
+  .axis{font-size:10px;fill:var(--muted)}
+  .ranges{display:flex;gap:6px;padding:10px 6px 14px;justify-content:center}
+  .ranges button{border:1px solid transparent;background:transparent;color:var(--muted);font:inherit;
+    font-size:12px;padding:5px 11px;border-radius:99px;cursor:pointer;transition:.16s}
+  .ranges button.on{background:var(--accent-soft);color:var(--accent);font-weight:600;border-color:color-mix(in srgb,var(--accent) 22%,transparent)}
+  .tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:11px;
+    padding:4px 7px;border-radius:7px;transform:translate(-50%,-130%);white-space:nowrap;opacity:0;transition:opacity .12s;z-index:3}
+
+  /* ── stats ── */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-radius:var(--r);overflow:hidden;
+    border:1px solid var(--line);box-shadow:var(--shadow);margin-bottom:12px}
+  .cell{background:var(--card);padding:14px 16px}
+  .cell .k{font-size:11.5px;color:var(--muted);margin-bottom:5px}
+  .cell .v{font-size:20px;font-weight:600;letter-spacing:-.01em}
+  .cell .v small{font-size:11.5px;color:var(--muted);font-weight:400;margin-left:2px}
+  .cell .x{font-size:11.5px;color:var(--muted);margin-top:3px}
+
+  /* ── sections ── */
+  h2{font-size:12.5px;color:var(--muted);font-weight:500;margin:20px 4px 8px;display:flex;justify-content:space-between;align-items:baseline}
+  h2 a{color:var(--accent);text-decoration:none;font-size:11.5px}
+  .box{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{font-size:11px;color:var(--muted);font-weight:500;text-align:right;padding:11px 14px 4px}
+  th:first-child{text-align:left}
+  td{padding:11px 14px;border-top:1px solid var(--line2);text-align:right;white-space:nowrap}
+  td:first-child{text-align:left;white-space:normal;color:var(--ink2)}
+  tr:first-child td{border-top:1px solid var(--line2)}
+  tbody tr:first-child td{border-top:0}
+  td b{font-weight:600;color:var(--ink)}
+  .spec{font-size:12.5px;line-height:1.35}
+
+  .rowlist{display:flex;flex-direction:column}
+  .trade{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:11px 14px;border-top:1px solid var(--line2)}
+  .trade:first-child{border-top:0}
+  .trade .t{font-size:11.5px;color:var(--muted)}
+  .trade .s{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
+  .trade .p{font-weight:600;font-size:14.5px}
+  .trade .a{font-size:11.5px;color:var(--muted);text-align:right;min-width:64px}
+
+  /* ── actions ── */
+  .acts{display:flex;gap:8px;margin:16px 0 0}
+  .acts button,.acts a{flex:1;border:1px solid var(--line);background:var(--card);color:var(--ink2);
+    font:inherit;font-size:13px;padding:11px 6px;border-radius:14px;text-align:center;text-decoration:none;cursor:pointer;transition:.15s}
+  .acts button.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+  .acts button:active{transform:scale(.97)}
+  .acts button[disabled]{opacity:.6}
+
+  footer{margin-top:18px;font-size:11.5px;color:var(--muted);line-height:1.7;padding:0 4px}
+  footer code{background:var(--line2);padding:1px 5px;border-radius:5px;font-size:10.5px}
+  .badges{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+  .badge{font-size:11px;padding:4px 9px;border-radius:99px;border:1px solid var(--line);color:var(--ink2);background:var(--card)}
+  .badge.ok{color:var(--down);border-color:color-mix(in srgb,var(--down) 30%,transparent);background:color-mix(in srgb,var(--down) 8%,transparent)}
+  .badge.warn{color:#a9772a;border-color:rgba(201,162,39,.35);background:rgba(201,162,39,.1)}
+  .hidden{display:none!important}
+  footer code{word-break:break-all}
+
+  /* 平板/桌面：放宽并分两列 */
+  @media (min-width:820px){
+    body{max-width:900px;padding:26px 24px 60px}
+    .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start}
+    .cols .grid{margin-bottom:0}
+    .big b{font-size:60px}
+    svg.chart{height:170px}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="brand"><h1>初火源质</h1><span>千岛 · 火炬之光</span></div>
-    <span class="pill" id="status"><span class="dot" id="dot"></span><span id="statusText">加载中</span><span id="count">—</span></span>
-  </header>
+<header>
+  <div class="brand"><h1>初火源质</h1><span>千岛 · 火炬之光</span></div>
+  <div class="pill" id="pill"><span class="dot"></span><span id="status">连接中</span><span id="count" style="opacity:.6">—</span></div>
+</header>
 
-  <section class="card hero">
-    <div class="label" style="display:flex;align-items:center;justify-content:space-between">
-      <span>1 元可购</span>
-      <span class="seg" id="seg"><button data-k="赛季" class="on">赛季</button><button data-k="非赛季">非赛季</button></span>
+<div class="card hero">
+  <div class="hero-top">
+    <div>
+      <div class="label">1 元可购</div>
+      <div class="big"><b id="main">—</b><i>火</i><span class="delta flat hidden" id="delta"></span></div>
     </div>
-    <div class="price">
-      <b id="fire">—</b><em>火</em>
-      <span class="delta flat" id="delta" style="visibility:hidden"></span>
+    <div class="seg" id="seg">
+      <button data-k="赛季" class="on">赛季</button>
+      <button data-k="非赛季">非赛季</button>
     </div>
-    <div class="sub"><span>1 火 ≈ <b id="yuan">—</b> 元</span><span id="updated">—</span></div>
-    <svg id="spark" viewBox="0 0 600 64" preserveAspectRatio="none" aria-hidden="true"></svg>
-  </section>
-
-  <div class="grid">
-    <div class="cell"><div class="k">加权均价</div><div class="v" id="wavg">—</div></div>
-    <div class="cell"><div class="k">中位数</div><div class="v" id="median">—</div></div>
-    <div class="cell"><div class="k">区间</div><div class="v" id="range">—</div></div>
-    <div class="cell"><div class="k" id="volK">成交额</div><div class="v" id="vol">—</div><div class="k" id="volFire" style="margin-top:2px"></div></div>
   </div>
+  <div class="sub"><span>1 火 ≈ <b id="yuan">—</b> 元</span><span id="updated">—</span></div>
 
-  <h2>分规格</h2>
-  <div class="card" style="padding:14px 16px">
-    <table><thead><tr><th>规格</th><th style="text-align:right">火/元</th><th style="text-align:right">笔数</th></tr></thead>
-    <tbody id="specs"><tr><td colspan="3" style="color:var(--muted)">—</td></tr></tbody></table>
+  <div class="chart-wrap">
+    <svg class="chart" id="chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg>
+    <div class="tip" id="tip"></div>
   </div>
-
-  <h2>数据校验</h2>
-  <div class="card" style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-    <span class="badge" id="chk">等待数据</span>
-    <span class="badge" id="srcBadge">成交明细</span>
-    <span class="badge" id="sampleBadge">样本 —</span>
-    <span id="healed" style="font-size:12px;color:var(--muted)"></span>
-  </div>
-
-  <footer>
-    <button class="primary" id="refresh">刷新</button>
-    <button id="auto">自动刷新：开</button>
-    <a class="btn" href="./history.csv">下载 CSV</a>
-    <a class="btn" href="https://github.com/" id="repoLink">仓库</a>
-  </footer>
-
-  <div class="foot">
-    手机端每 10 分钟抓一次千岛成交明细，写入 <code>data.json</code>，这里只是读它。<br>
-    抓取失败时保留上一份并标记 <code>STALE</code>，不会静默伪装实时。
+  <div class="ranges" id="ranges">
+    <button data-r="24h" class="on">24 小时</button>
+    <button data-r="7d">7 天</button>
+    <button data-r="30d">30 天</button>
+    <button data-r="all">全部</button>
   </div>
 </div>
 
+<div class="grid">
+  <div class="cell"><div class="k" id="k1">较 24 小时前</div><div class="v" id="change">—</div><div class="x" id="changeFrom">—</div></div>
+  <div class="cell"><div class="k">区间高低</div><div class="v" id="hl">—</div><div class="x" id="hlRange">本窗口内</div></div>
+  <div class="cell"><div class="k">加权均价</div><div class="v" id="wavg">—</div><div class="x">按成交量加权</div></div>
+  <div class="cell"><div class="k">中位数</div><div class="v" id="median">—</div><div class="x">抗单笔异常</div></div>
+  <div class="cell"><div class="k">近 100 笔成交额</div><div class="v" id="volYuan">—</div><div class="x" id="volFire">—</div></div>
+  <div class="cell"><div class="k">数据量</div><div class="v" id="dataLen">—</div><div class="x" id="dataLenSub">—</div></div>
+</div>
+
+<div class="cols">
+  <div>
+    <h2>分规格 <span id="specHint" style="font-weight:400"></span></h2>
+    <div class="box"><table id="specTable">
+      <thead><tr><th>规格</th><th>火/元</th><th>笔数</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
+  <div>
+    <h2>最近成交 <span style="font-weight:400">时间倒序</span></h2>
+    <div class="box rowlist" id="trades"></div>
+  </div>
+</div>
+
+<h2>每日历史 <a href="./daily.json" target="_blank">daily.json ↗</a></h2>
+<div class="box"><table id="dailyTable">
+  <thead><tr><th>日期</th><th>均价</th><th>低/高</th><th>笔数</th></tr></thead>
+  <tbody></tbody>
+</table></div>
+
+<div class="acts">
+  <button class="primary" id="refresh">刷新</button>
+  <button id="auto">自动刷新：开</button>
+  <a id="csv" href="./history.csv" download>下载 CSV</a>
+  <a id="repo" href="https://github.com/llhhoo221634-hub/qiandao-huo" target="_blank" rel="noopener">仓库</a>
+</div>
+
+<footer>
+  <div class="badges" id="badges"></div>
+  <div>
+    数据源：千岛 <code>get-spu-trading-history-list</code> 成交明细，主价取最新一笔，均值/中位数自算。<br>
+    手机端每 10 分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/YYYY-MM.jsonl</code>，日线永久累积在 <code>daily.json</code>。<br>
+    抓取失败时保留上一份并标记 STALE，不会静默伪装实时。
+  </div>
+</footer>
+
 <script>
 const $ = (id) => document.getElementById(id);
-let auto = true, every = 60000, league = '赛季', last = {}, hasData = false;
-let timer = null, tick = null, left = 0;
-
-const fmt = (n, d = 2) => n == null ? '—' : Number(n).toLocaleString('zh-CN', { maximumFractionDigits: d, minimumFractionDigits: d });
-const ago = (ms) => {
+const fmt = (n, d = 2) => n == null || isNaN(n) ? '—' : Number(n).toLocaleString('zh-CN', { minimumFractionDigits: d, maximumFractionDigits: d });
+const fmtInt = (n) => n == null ? '—' : Math.round(n).toLocaleString('zh-CN');
+const timeAgo = (ms) => {
   const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
   if (s < 60) return s + ' 秒前';
   if (s < 3600) return Math.round(s / 60) + ' 分钟前';
   if (s < 86400) return Math.round(s / 3600) + ' 小时前';
   return Math.round(s / 86400) + ' 天前';
 };
+const clock = (ts) => new Date(ts).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
+const dayStr = (ts) => new Date(ts).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
 
-function draw(pts) {
-  const svg = $('spark'), W = 600, H = 64, pad = 4;
-  if (!pts || pts.length < 2) { svg.innerHTML = ''; return; }
-  const vs = pts.map(p => p.v), min = Math.min(...vs), max = Math.max(...vs), span = (max - min) || 1;
-  const step = (W - pad * 2) / (pts.length - 1);
-  const xy = pts.map((p, i) => [pad + i * step, H - pad - ((p.v - min) / span) * (H - pad * 2)]);
-  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
-  const area = `${pad},${H} ${line} ${W - pad},${H}`;
-  const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+let D = null, league = '赛季', range = '24h', auto = true, tick = null, left = 60, inflight = false;
+
+for (const btn of $('seg').children) {
+  btn.onclick = () => {
+    if (btn.classList.contains('off')) return;
+    league = btn.dataset.k;
+    for (const b of $('seg').children) b.classList.toggle('on', b === btn);
+    render();
+  };
+}
+for (const btn of $('ranges').children) {
+  btn.onclick = () => {
+    range = btn.dataset.r;
+    for (const b of $('ranges').children) b.classList.toggle('on', b === btn);
+    drawChart();
+  };
+}
+
+function pick() {
+  const l = D.leagues || {};
+  const cur = l[league] || {};
+  const other = Object.entries(l).find(([k]) => k !== league);
+  return { cur, other: other ? [other[0], other[1]] : null };
+}
+
+function series() {
+  if (range === '24h') {
+    const arr = (D.history?.[league] || []);
+    const cut = Date.now() - 24 * 3600e3;
+    const pts = arr.filter((p) => p.t >= cut);
+    return (pts.length >= 2 ? pts : arr.slice(-2)).map((p) => ({ t: p.t, v: p.v }));
+  }
+  const days = { '7d': 7, '30d': 30, all: 1e9 }[range];
+  const rows = (D.daily || []).slice(-days);
+  return rows.map((r) => ({ t: new Date(r.d + 'T12:00:00+08:00').getTime(), v: r.avg ?? r.close }));
+}
+
+function drawChart() {
+  const svg = $('chart');
+  const pts = series();
+  const W = 320, H = 150, PL = 36, PR = 8, PT = 10, PB = 18;
+  if (pts.length < 2) {
+    svg.innerHTML = `<text x="160" y="82" text-anchor="middle" class="axis">样本不足，等待更多成交</text>`;
+    return;
+  }
+  const vs = pts.map((p) => p.v);
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  const pad = (hi - lo) * 0.18 || hi * 0.02 || 1;
+  lo -= pad; hi += pad;
+  const x = (i) => PL + (i / (pts.length - 1)) * (W - PL - PR);
+  const y = (v) => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
+  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - PB} L${PL},${H - PB} Z`;
+
+  // 网格：3 条水平线
+  let grid = '';
+  for (let i = 0; i <= 2; i++) {
+    const v = lo + (hi - lo) * (i / 2);
+    const yy = y(v);
+    grid += `<line x1="${PL}" x2="${W - PR}" y1="${yy}" y2="${yy}" stroke="var(--line2)" stroke-width="1"/>`;
+    grid += `<text x="${PL - 6}" y="${yy + 3}" text-anchor="end" class="axis">${Math.round(v)}</text>`;
+  }
+  const last = pts[pts.length - 1];
+  const first = pts[0];
+  const up = last.v >= first.v;
+  const col = up ? 'var(--up)' : 'var(--down)';
+
+  let xlab = '';
+  if (range === '24h') {
+    xlab = `<text x="${PL}" y="${H - 4}" class="axis">${clock(first.t)}</text>
+            <text x="${W - PR}" y="${H - 4}" text-anchor="end" class="axis">${clock(last.t)}</text>`;
+  } else {
+    xlab = `<text x="${PL}" y="${H - 4}" class="axis">${new Date(first.t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>
+            <text x="${W - PR}" y="${H - 4}" text-anchor="end" class="axis">${new Date(last.t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>`;
+  }
+
   svg.innerHTML = `
-    <polygon points="${area}" fill="${c}" opacity=".07"/>
-    <polyline points="${line}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${xy.at(-1)[0]}" cy="${xy.at(-1)[1]}" r="2.6" fill="${c}"/>`;
+    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${col}" stop-opacity=".22"/>
+      <stop offset="1" stop-color="${col}" stop-opacity="0"/>
+    </linearGradient></defs>
+    ${grid}
+    <path d="${area}" fill="url(#g)"/>
+    <path d="${line}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${x(pts.length - 1)}" cy="${y(last.v)}" r="3.2" fill="${col}"/>
+    ${xlab}`;
+
+  // 触摸查看
+  svg.onpointermove = (e) => {
+    const r = svg.getBoundingClientRect();
+    const rx = ((e.clientX - r.left) / r.width) * W;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.round(((rx - PL) / (W - PL - PR)) * (pts.length - 1))));
+    const p = pts[i];
+    const tip = $('tip');
+    tip.style.opacity = 1;
+    tip.style.left = (x(i) / W * 100) + '%';
+    tip.style.top = (y(p.v) / H * 100) + '%';
+    tip.textContent = `${range === '24h' ? clock(p.t) : new Date(p.t).toLocaleDateString('zh-CN')} · ${fmt(p.v)} 火`;
+  };
+  svg.onpointerleave = () => { $('tip').style.opacity = 0; };
 }
 
-function render(d) {
-  hasData = true;
-  const l = d.leagues || {};
-  const main = l[league] || d;
-  const stale = !!d.stale;
+function deltas() {
+  const arr = D.history?.[league] || [];
+  const nowV = pick().cur.fire_per_yuan ?? D.fire_per_yuan;
+  const cut = Date.now() - 24 * 3600e3;
+  const back = arr.find((p) => p.t >= cut) || arr[0];
+  if (!back || !back.v) return null;
+  return { base: back.v, pct: ((nowV - back.v) / back.v) * 100, nowV };
+}
 
-  for (const btn of $('seg').children) {
-    const k = btn.dataset.k, v = l[k];
-    btn.innerHTML = v ? `${k}<i class="n">${fmt(v.fire_per_yuan, 0)}</i>` : k;
-    btn.classList.toggle('off', !v);
+function render() {
+  if (!D) return;
+  const { cur, other } = pick();
+
+  // 段控价格
+  for (const b of $('seg').children) {
+    const k = b.dataset.k;
+    const v = D.leagues?.[k];
+    b.innerHTML = `${k}<span class="n">${v?.fire_per_yuan ? fmt(v.fire_per_yuan, 0) : ''}</span>`;
+    b.classList.toggle('off', !v?.fire_per_yuan);
+    b.classList.toggle('on', k === league);
   }
 
-  const ageMs = d.at ? Date.now() - d.at : 0;
-  $('dot').className = 'dot' + (stale || ageMs > 45 * 60000 ? ' stale' : '');
-  $('statusText').textContent = stale ? '抓取中断' : ago(d.at || Date.now());
-  $('fire').textContent = fmt(main.fire_per_yuan, 2);
-  $('yuan').textContent = main.yuan_per_fire == null ? '—' : Number(main.yuan_per_fire).toFixed(6);
-  $('wavg').textContent = fmt(main.wavg_fire_per_yuan, 2);
-  $('median').textContent = fmt(main.median_fire_per_yuan, 2);
-  $('range').textContent = main.low_fire_per_yuan === main.high_fire_per_yuan
-    ? fmt(main.low_fire_per_yuan, 0)
-    : `${fmt(main.low_fire_per_yuan, 0)}–${fmt(main.high_fire_per_yuan, 0)}`;
-  $('volK').textContent = `近 ${main.samples || 0} 笔成交额`;
-  $('vol').textContent = `${fmt(main.volume_yuan, 0)} 元`;
-  $('volFire').textContent = `${fmt((main.volume_fire || 0) / 10000, 1)} 万火`;
-  $('updated').textContent = main.time || (d.at ? new Date(d.at).toLocaleString('zh-CN', { hour12: false }) : '—');
+  const price = cur.fire_per_yuan ?? D.fire_per_yuan;
+  $('main').textContent = fmt(price, 2);
+  $('yuan').textContent = fmt(cur.yuan_per_fire ?? 1 / price, 6);
+  $('updated').textContent = cur.time || D.time || '';
 
-  const prev = last[league];
+  const d = deltas();
   const el = $('delta');
-  if (prev && main.fire_per_yuan != null) {
-    const diff = main.fire_per_yuan - prev, pct = (diff / prev) * 100;
-    el.style.visibility = 'visible';
-    el.className = 'delta ' + (Math.abs(pct) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down');
-    el.textContent = `${diff > 0 ? '▲' : diff < 0 ? '▼' : '·'} ${Math.abs(pct).toFixed(2)}%`;
-  } else el.style.visibility = 'hidden';
-  if (main.fire_per_yuan != null) last[league] = main.fire_per_yuan;
+  if (d && isFinite(d.pct)) {
+    el.classList.remove('hidden', 'up', 'down', 'flat');
+    el.classList.add(d.pct > 0.05 ? 'up' : d.pct < -0.05 ? 'down' : 'flat');
+    el.textContent = `${d.pct >= 0 ? '▲' : '▼'} ${Math.abs(d.pct).toFixed(2)}%`;
+    $('change').textContent = `${d.pct >= 0 ? '+' : ''}${d.pct.toFixed(2)}%`;
+    $('changeFrom').textContent = `24 小时前 ${fmt(d.base)}`;
+  } else {
+    el.classList.add('hidden');
+    $('change').textContent = '—'; $('changeFrom').textContent = '数据不足';
+  }
 
-  const hist = (d.history && d.history[league]) || [];
-  draw(hist.slice(-60));
+  $('hl').textContent = cur.low_fire_per_yuan
+    ? `${fmt(cur.low_fire_per_yuan, 0)} – ${fmt(cur.high_fire_per_yuan, 0)}`
+    : '—';
+  $('hlRange').textContent = `近 ${cur.samples || 0} 笔`;
+  $('wavg').textContent = fmt(cur.wavg_fire_per_yuan ?? price, 2);
+  $('median').textContent = fmt(cur.median_fire_per_yuan ?? price, 2);
+  $('volYuan').innerHTML = `${fmtInt(D.volume_yuan)} <small>元</small>`;
+  $('volFire').textContent = `${fmt(D.volume_fire / 10000, 1)} 万火 · ${D.samples || 0} 笔`;
+  $('dataLen').innerHTML = `${D.total_days || (D.daily || []).length} <small>天</small>`;
+  $('dataLenSub').textContent = `${fmtInt(D.total_points || 0)} 个采样点 · 每 10 分钟`;
 
-  const rows = (d.by_spec || []).filter((x) => (x.league || '赛季') === league).slice(0, 6);
-  $('specs').innerHTML = rows.length
-    ? rows.map(s => `<tr><td>${s.spec}</td><td class="num">${fmt(s.fire_per_yuan, 2)}</td><td class="num">${s.count}</td></tr>`).join('')
-    : '<tr><td colspan="3" style="color:var(--muted)">—</td></tr>';
+  if (other && !D.leagues?.[league]?.fire_per_yuan) {
+    $('changeFrom').textContent = '该联赛暂无成交';
+  }
 
-  const chk = d.summary_check || {};
-  const map = { agree: ['一致', 'ok'], mismatch: ['摘要偏差 ×' + chk.ratio, 'warn'], unavailable: ['无摘要', ''], error: ['校验失败', 'warn'] };
-  const [txt, cls] = map[chk.status] || ['—', ''];
-  $('chk').textContent = chk.status === 'mismatch' ? `${txt}·全站` : txt;
-  $('chk').className = 'badge ' + cls;
-  $('srcBadge').textContent = stale ? '缓存降级' : '成交明细';
-  $('srcBadge').className = 'badge ' + (stale ? 'warn' : 'ok');
-  $('sampleBadge').textContent = `样本 ${d.samples || 0} 笔`;
-  $('healed').textContent = d.healed && d.healed.length ? `自愈：${d.healed.join(' / ')}` : '';
+  // 分规格
+  const rows = (D.by_spec || []).filter((r) => r.league === league);
+  $('specTable').querySelector('tbody').innerHTML = rows.length
+    ? rows.map((r) => `<tr><td class="spec">${r.spec}</td><td><b>${fmt(r.fire_per_yuan, 2)}</b></td><td>${r.count}</td></tr>`).join('')
+    : `<tr><td colspan="3" style="color:var(--muted);text-align:center;padding:20px">暂无</td></tr>`;
+  $('specHint').textContent = `${rows.length} 类`;
+
+  // 最近成交
+  const tr = (D.trades || []).filter((t) => t.league === league).slice(0, 12);
+  $('trades').innerHTML = tr.length
+    ? tr.map((t) => `<div class="trade">
+        <div><div class="t">${clock(t.ts)} · ${fmtInt(t.fire)} 火</div><div class="s">${t.spec.replace(/\//g, ' · ')}</div></div>
+        <div class="p">${fmt(t.price, 2)}</div>
+        <div class="a">${fmt(t.yuan, 0)} 元</div>
+      </div>`).join('')
+    : `<div style="padding:20px;text-align:center;color:var(--muted);font-size:13px">暂无成交</div>`;
+
+  // 日线表（最近 10 天，倒序）
+  const dd = [...(D.daily || [])].reverse().slice(0, 10);
+  $('dailyTable').querySelector('tbody').innerHTML = dd.length
+    ? dd.map((r) => `<tr><td>${r.d.slice(5)}</td><td><b>${fmt(r.avg ?? r.close, 2)}</b></td>
+        <td style="color:var(--muted)">${fmt(r.low, 0)} / ${fmt(r.high, 0)}</td><td>${r.samples}</td></tr>`).join('')
+    : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">今天刚开始记录</td></tr>`;
+
+  // 校验徽章
+  const chk = D.summary_check || {};
+  const map = { agree: ['平台摘要一致', 'ok'], mismatch: ['摘要偏差 ×' + chk.ratio, 'warn'], unavailable: ['无平台摘要', ''], error: ['摘要校验失败', 'warn'] };
+  const [ct, cc] = map[chk.status] || ['—', ''];
+  $('badges').innerHTML = `
+    <span class="badge ${cc}">${ct}</span>
+    <span class="badge ok">成交明细口径</span>
+    <span class="badge">${D.samples || 0} 笔样本</span>
+    <span class="badge">更新 ${timeAgo(D.at)}</span>`;
+
+  drawChart();
 }
 
-async function load(manual = false) {
+function setStatus(text, kind) {
+  $('status').textContent = text;
+  $('pill').className = 'pill' + (kind ? ' ' + kind : '');
+}
+
+async function load(force) {
+  if (inflight) return;
+  inflight = true;
   $('refresh').disabled = true;
-  if (manual) { $('refresh').textContent = '刷新中…'; $('statusText').textContent = '刷新中'; }
+  if (force) setStatus('刷新中');
   try {
-    const r = await fetch('./data.json?_=' + Date.now(), { cache: 'no-store' });
+    const r = await fetch('./data.json?_=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
-    render(await r.json());
+    D = await r.json();
+    if (D.stale) { setStatus('数据过期', 'stale'); } else { setStatus('实时', ''); }
+    render();
   } catch (e) {
-    $('statusText').textContent = hasData ? '读取失败' : '还没有数据';
-    $('dot').className = 'dot stale';
-    if (!hasData) $('updated').textContent = String(e.message || e).slice(0, 50);
+    if (D) { setStatus('接口不可达', 'err'); }
+    else { setStatus('加载失败', 'err'); $('main').textContent = '—'; }
   } finally {
+    inflight = false;
     $('refresh').disabled = false;
-    $('refresh').textContent = '刷新';
-    left = Math.round(every / 1000);
-    $('count').textContent = left + 's';
+    left = 60;
+    $('count').textContent = '60s';
   }
 }
 
-function schedule() {
-  clearInterval(timer); clearInterval(tick);
-  if (!auto) { $('count').textContent = '暂停'; return; }
-  left = Math.round(every / 1000);
-  $('count').textContent = left + 's';
-  tick = setInterval(() => { left--; $('count').textContent = Math.max(left, 0) + 's'; }, 1000);
-  timer = setInterval(() => load(), every);
-}
-
-$('seg').addEventListener('click', (e) => {
-  const b = e.target.closest('button'); if (!b || b.classList.contains('off')) return;
-  league = b.dataset.k;
-  [...$('seg').children].forEach((x) => x.classList.toggle('on', x === b));
-  load();
-});
 $('refresh').onclick = () => load(true);
 $('auto').onclick = () => {
   auto = !auto;
   $('auto').textContent = '自动刷新：' + (auto ? '开' : '关');
-  schedule(); if (auto) load();
+  left = 60;
 };
-$('repoLink').href = location.hostname.endsWith('github.io')
-  ? `https://github.com/${location.hostname.split('.')[0]}/${location.pathname.split('/')[1]}`
-  : 'https://github.com/';
+tick = setInterval(() => {
+  if (!auto) { $('count').textContent = '暂停'; return; }
+  left--;
+  $('count').textContent = Math.max(left, 0) + 's';
+  if (left <= 0) load(false);
+}, 1000);
 
-load();
-schedule();
-setInterval(() => { if (hasData && $('statusText').textContent !== '抓取中断') $('statusText').textContent = $('statusText').textContent; }, 30000);
+load(false);
 </script>
 </body>
 </html>
