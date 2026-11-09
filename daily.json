@@ -1,17 +1,17 @@
 {
- "updatedAt": "2026-11-09T17:00:04.751Z",
+ "updatedAt": "2026-11-09T17:01:39.778Z",
  "unit": "fire_per_yuan",
  "daily": [
   {
    "d": "2026-11-10",
    "open": 420.964,
-   "close": 417.003,
+   "close": 419.992,
    "high": 420.964,
    "low": 417.003,
-   "avg": 414.635,
-   "samples": 2,
-   "volume_fire": 4320700,
-   "volume_yuan": 10435
+   "avg": 414.323,
+   "samples": 3,
+   "volume_fire": 6415500,
+   "volume_yuan": 15509
   }
  ]
 }
