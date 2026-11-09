@@ -2,3 +2,5 @@ node_modules/
 .DS_Store
 collector/state/bundle.live.mjs
 collector/state/x/
+# 本机运行态（device id / 上次价 / spu 缓存）不入库
+collector/state/*.json

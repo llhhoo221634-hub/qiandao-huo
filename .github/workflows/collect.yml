@@ -6,7 +6,7 @@ on:
   workflow_dispatch:          # 仅在需要时手动触发验证
 
 permissions:
-  contents: write
+  contents: read   # 只验证不写回，采集由手机端负责
 
 concurrency:
   group: collect
@@ -26,18 +26,9 @@ jobs:
         working-directory: collector
         run: npm install --no-audit --no-fund
 
-      - name: 抓一次价
+      - name: 抓一次价（仅验证，不写回仓库）
         working-directory: collector
         env:
           HUO_ROOT: ${{ github.workspace }}/collector
           HUO_CSV: ${{ github.workspace }}/history.csv
         run: node collect.mjs
-
-      - name: 提交数据
-        run: |
-          git config user.name "price-bot"
-          git config user.email "price-bot@users.noreply.github.com"
-          rm -rf collector/node_modules
-          git add data.json history.csv collector/state || true
-          git diff --cached --quiet || git commit -m "chore: price $(date -u +%FT%TZ)"
-          git push
