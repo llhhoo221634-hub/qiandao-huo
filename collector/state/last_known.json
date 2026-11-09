@@ -1,0 +1,69 @@
+{
+ "spuId": "836104794648117801",
+ "league": "赛季",
+ "ts": 1794235785000,
+ "time": "2026/11/9 22:49:45",
+ "fire_per_yuan": 434.688,
+ "yuan_per_fire": 0.0023005,
+ "wavg_fire_per_yuan": 424.973,
+ "median_fire_per_yuan": 428.683,
+ "low_fire_per_yuan": 400.946,
+ "high_fire_per_yuan": 444.041,
+ "samples": 100,
+ "volume_fire": 2575888,
+ "volume_yuan": 6064.97,
+ "spec": "赛季/普通/支持所有物品交易/单笔交易",
+ "leagues": {
+  "赛季": {
+   "ts": 1794235785000,
+   "time": "2026/11/9 22:49:45",
+   "fire_per_yuan": 434.688,
+   "yuan_per_fire": 0.0023005,
+   "wavg_fire_per_yuan": 424.973,
+   "median_fire_per_yuan": 428.683,
+   "low_fire_per_yuan": 400.946,
+   "high_fire_per_yuan": 444.041,
+   "samples": 100,
+   "volume_fire": 2575888,
+   "volume_yuan": 6064.97,
+   "spec": "赛季/普通/支持所有物品交易/单笔交易"
+  }
+ },
+ "by_spec": [
+  {
+   "spec": "赛季/普通/仅支持神谱交易/单笔交易",
+   "league": "赛季",
+   "count": 50,
+   "fire_per_yuan": 416.667,
+   "volume_fire": 1286001
+  },
+  {
+   "spec": "赛季/普通/支持所有物品交易/单笔交易",
+   "league": "赛季",
+   "count": 46,
+   "fire_per_yuan": 434.688,
+   "volume_fire": 1107921
+  },
+  {
+   "spec": "赛季/普通/支持所有物品交易/多笔交易",
+   "league": "赛季",
+   "count": 2,
+   "fire_per_yuan": 426.985,
+   "volume_fire": 120000
+  },
+  {
+   "spec": "赛季/普通/仅支持神谱交易/多笔交易",
+   "league": "赛季",
+   "count": 2,
+   "fire_per_yuan": 417.014,
+   "volume_fire": 61966
+  }
+ ],
+ "healed": [],
+ "summary_check": {
+  "status": "mismatch",
+  "otherside_fire_per_yuan": 906.739,
+  "ratio": 2.086
+ },
+ "savedAt": 1794235806537
+}
