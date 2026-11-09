@@ -59,7 +59,7 @@
   }
  },
  "healed": [],
- "stale": false,
+ "stale": true,
  "history": {
   "赛季": [
    {
@@ -71,5 +71,7 @@
     "v": 434.688
    }
   ]
- }
+ },
+ "checkedAt": "2026-11-09T16:43:01.395Z",
+ "error": "stale"
 }
