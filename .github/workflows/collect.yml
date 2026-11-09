@@ -1,9 +1,9 @@
 name: 采集价格
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"   # 每 10 分钟（GitHub 的高峰期可能延迟几分钟）
-  workflow_dispatch:          # 支持手动触发
+  # 定时采集已关闭：千岛网关对 GitHub runner 的机房 IP 一律回「手速太快」(405)。
+  # 采集改由手机端（国内住宅 IP）执行后推送，见 README「数据来源」。
+  workflow_dispatch:          # 仅在需要时手动触发验证
 
 permissions:
   contents: write

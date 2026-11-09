@@ -26,6 +26,11 @@ try {
 }
 
 const now = Date.now();
+// 保护：抓不到就完全不动线上文件，绝不用旧值覆盖更新的数据
+if (!p || p.stale) {
+  warn('本轮未取得新价，保持线上数据不变');
+  process.exit(0);
+}
 if (p && !p.stale) {
   for (const [k, v] of Object.entries(p.leagues || {})) {
     if (!v?.fire_per_yuan) continue;
