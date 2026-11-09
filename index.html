@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>初火源质 · 实时价</title>
+<style>
+  :root{
+    --bg:#f7f7f5; --card:#fff; --ink:#1c1c1a; --muted:#8a8a84; --line:#e8e8e4;
+    --accent:#c8552c; --up:#c8552c; --down:#2f7d63; --warn:#b7791f; --ok:#2f7d63;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#121211;--card:#1b1b1a;--ink:#f2f2ef;--muted:#8d8d86;--line:#2a2a28;--accent:#e2764c;}
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC",system-ui,sans-serif;
+    padding:20px 16px 40px;}
+  .wrap{max-width:680px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}
+  .brand{display:flex;align-items:baseline;gap:9px}
+  .brand h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px}
+  .brand span{font-size:12px;color:var(--muted)}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+    border:1px solid var(--line);background:var(--card);padding:5px 10px;border-radius:999px}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 18%,transparent)}
+  .dot.stale{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 18%,transparent)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 18px 16px;margin-bottom:12px}
+  .hero .label{font-size:12px;color:var(--muted);letter-spacing:.4px;text-transform:uppercase}
+  .price{display:flex;align-items:flex-end;gap:10px;margin:6px 0 2px}
+  .price b{font-size:42px;line-height:1;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+  .price em{font-style:normal;font-size:13px;color:var(--muted);padding-bottom:4px}
+  .delta{font-size:13px;font-variant-numeric:tabular-nums;margin-left:auto;padding-bottom:5px}
+  .delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.flat{color:var(--muted)}
+  .sub{display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12.5px;color:var(--muted)}
+  .sub b{font-family:var(--mono);font-weight:500;color:var(--ink)}
+  svg{display:block;width:100%;height:64px;margin-top:14px;overflow:visible}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+  .cell{background:var(--card);padding:13px 16px}
+  .cell .k{font-size:11.5px;color:var(--muted);margin-bottom:3px}
+  .cell .v{font-family:var(--mono);font-size:17px;font-variant-numeric:tabular-nums}
+  h2{font-size:12.5px;color:var(--muted);font-weight:500;margin:20px 2px 8px;letter-spacing:.3px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{text-align:left;font-weight:500;color:var(--muted);font-size:11.5px;padding:0 0 8px}
+  td{padding:9px 0;border-top:1px solid var(--line);font-variant-numeric:tabular-nums}
+  td.num{text-align:right;font-family:var(--mono)}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .badge.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 35%,var(--line));background:color-mix(in srgb,var(--warn) 8%,transparent)}
+  .badge.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,var(--line));background:color-mix(in srgb,var(--ok) 8%,transparent)}
+  footer{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}
+  button{font:inherit;font-size:13px;padding:9px 14px;border-radius:11px;border:1px solid var(--line);
+    background:var(--card);color:var(--ink);cursor:pointer;transition:.15s}
+  button:active{transform:scale(.98)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  button:disabled{opacity:.5}
+  a.btn{font-size:13px;padding:9px 14px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);text-decoration:none}
+  .foot{font-size:11.5px;color:var(--muted);margin-top:18px;line-height:1.7}
+  .foot code{font-family:var(--mono);font-size:11px}
+  .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:2px}
+  .seg button{border:0;background:transparent;padding:4px 11px;border-radius:8px;font-size:12.5px;color:var(--muted)}
+  .seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.07);font-weight:500}
+  .seg .n{font-style:normal;color:var(--muted);font-size:11px;margin-left:4px;font-variant-numeric:tabular-nums}
+  .seg button.on .n{color:var(--accent)}
+  .seg button.off{opacity:.4;cursor:default}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><h1>初火源质</h1><span>千岛 · 火炬之光</span></div>
+    <span class="pill" id="status"><span class="dot" id="dot"></span><span id="statusText">加载中</span><span id="count">—</span></span>
+  </header>
+
+  <section class="card hero">
+    <div class="label" style="display:flex;align-items:center;justify-content:space-between">
+      <span>1 元可购</span>
+      <span class="seg" id="seg"><button data-k="赛季" class="on">赛季</button><button data-k="非赛季">非赛季</button></span>
+    </div>
+    <div class="price">
+      <b id="fire">—</b><em>火</em>
+      <span class="delta flat" id="delta" style="visibility:hidden"></span>
+    </div>
+    <div class="sub"><span>1 火 ≈ <b id="yuan">—</b> 元</span><span id="updated">—</span></div>
+    <svg id="spark" viewBox="0 0 600 64" preserveAspectRatio="none" aria-hidden="true"></svg>
+  </section>
+
+  <div class="grid">
+    <div class="cell"><div class="k">加权均价</div><div class="v" id="wavg">—</div></div>
+    <div class="cell"><div class="k">中位数</div><div class="v" id="median">—</div></div>
+    <div class="cell"><div class="k">区间</div><div class="v" id="range">—</div></div>
+    <div class="cell"><div class="k" id="volK">成交额</div><div class="v" id="vol">—</div><div class="k" id="volFire" style="margin-top:2px"></div></div>
+  </div>
+
+  <h2>分规格</h2>
+  <div class="card" style="padding:14px 16px">
+    <table><thead><tr><th>规格</th><th style="text-align:right">火/元</th><th style="text-align:right">笔数</th></tr></thead>
+    <tbody id="specs"><tr><td colspan="3" style="color:var(--muted)">—</td></tr></tbody></table>
+  </div>
+
+  <h2>数据校验</h2>
+  <div class="card" style="padding:14px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+    <span class="badge" id="chk">等待数据</span>
+    <span class="badge" id="srcBadge">成交明细</span>
+    <span class="badge" id="sampleBadge">样本 —</span>
+    <span id="healed" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+
+  <footer>
+    <button class="primary" id="refresh">刷新</button>
+    <button id="auto">自动刷新：开</button>
+    <a class="btn" href="./history.csv">下载 CSV</a>
+    <a class="btn" href="https://github.com/" id="repoLink">仓库</a>
+  </footer>
+
+  <div class="foot">
+    数据由 GitHub Actions 定时抓取后写入 <code>data.json</code>，这里只是读它。<br>
+    抓取失败时保留上一份并标记 <code>STALE</code>，不会静默伪装实时。
+  </div>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let auto = true, every = 60000, league = '赛季', last = {}, hasData = false;
+let timer = null, tick = null, left = 0;
+
+const fmt = (n, d = 2) => n == null ? '—' : Number(n).toLocaleString('zh-CN', { maximumFractionDigits: d, minimumFractionDigits: d });
+const ago = (ms) => {
+  const s = Math.max(0, Math.round((Date.now() - ms) / 1000));
+  if (s < 60) return s + ' 秒前';
+  if (s < 3600) return Math.round(s / 60) + ' 分钟前';
+  if (s < 86400) return Math.round(s / 3600) + ' 小时前';
+  return Math.round(s / 86400) + ' 天前';
+};
+
+function draw(pts) {
+  const svg = $('spark'), W = 600, H = 64, pad = 4;
+  if (!pts || pts.length < 2) { svg.innerHTML = ''; return; }
+  const vs = pts.map(p => p.v), min = Math.min(...vs), max = Math.max(...vs), span = (max - min) || 1;
+  const step = (W - pad * 2) / (pts.length - 1);
+  const xy = pts.map((p, i) => [pad + i * step, H - pad - ((p.v - min) / span) * (H - pad * 2)]);
+  const line = xy.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${pad},${H} ${line} ${W - pad},${H}`;
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  svg.innerHTML = `
+    <polygon points="${area}" fill="${c}" opacity=".07"/>
+    <polyline points="${line}" fill="none" stroke="${c}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="${xy.at(-1)[0]}" cy="${xy.at(-1)[1]}" r="2.6" fill="${c}"/>`;
+}
+
+function render(d) {
+  hasData = true;
+  const l = d.leagues || {};
+  const main = l[league] || d;
+  const stale = !!d.stale;
+
+  for (const btn of $('seg').children) {
+    const k = btn.dataset.k, v = l[k];
+    btn.innerHTML = v ? `${k}<i class="n">${fmt(v.fire_per_yuan, 0)}</i>` : k;
+    btn.classList.toggle('off', !v);
+  }
+
+  const ageMs = d.at ? Date.now() - d.at : 0;
+  $('dot').className = 'dot' + (stale || ageMs > 45 * 60000 ? ' stale' : '');
+  $('statusText').textContent = stale ? '抓取中断' : ago(d.at || Date.now());
+  $('fire').textContent = fmt(main.fire_per_yuan, 2);
+  $('yuan').textContent = main.yuan_per_fire == null ? '—' : Number(main.yuan_per_fire).toFixed(6);
+  $('wavg').textContent = fmt(main.wavg_fire_per_yuan, 2);
+  $('median').textContent = fmt(main.median_fire_per_yuan, 2);
+  $('range').textContent = main.low_fire_per_yuan === main.high_fire_per_yuan
+    ? fmt(main.low_fire_per_yuan, 0)
+    : `${fmt(main.low_fire_per_yuan, 0)}–${fmt(main.high_fire_per_yuan, 0)}`;
+  $('volK').textContent = `近 ${main.samples || 0} 笔成交额`;
+  $('vol').textContent = `${fmt(main.volume_yuan, 0)} 元`;
+  $('volFire').textContent = `${fmt((main.volume_fire || 0) / 10000, 1)} 万火`;
+  $('updated').textContent = main.time || (d.at ? new Date(d.at).toLocaleString('zh-CN', { hour12: false }) : '—');
+
+  const prev = last[league];
+  const el = $('delta');
+  if (prev && main.fire_per_yuan != null) {
+    const diff = main.fire_per_yuan - prev, pct = (diff / prev) * 100;
+    el.style.visibility = 'visible';
+    el.className = 'delta ' + (Math.abs(pct) < 0.05 ? 'flat' : diff > 0 ? 'up' : 'down');
+    el.textContent = `${diff > 0 ? '▲' : diff < 0 ? '▼' : '·'} ${Math.abs(pct).toFixed(2)}%`;
+  } else el.style.visibility = 'hidden';
+  if (main.fire_per_yuan != null) last[league] = main.fire_per_yuan;
+
+  const hist = (d.history && d.history[league]) || [];
+  draw(hist.slice(-60));
+
+  const rows = (d.by_spec || []).filter((x) => (x.league || '赛季') === league).slice(0, 6);
+  $('specs').innerHTML = rows.length
+    ? rows.map(s => `<tr><td>${s.spec}</td><td class="num">${fmt(s.fire_per_yuan, 2)}</td><td class="num">${s.count}</td></tr>`).join('')
+    : '<tr><td colspan="3" style="color:var(--muted)">—</td></tr>';
+
+  const chk = d.summary_check || {};
+  const map = { agree: ['一致', 'ok'], mismatch: ['摘要偏差 ×' + chk.ratio, 'warn'], unavailable: ['无摘要', ''], error: ['校验失败', 'warn'] };
+  const [txt, cls] = map[chk.status] || ['—', ''];
+  $('chk').textContent = chk.status === 'mismatch' ? `${txt}·全站` : txt;
+  $('chk').className = 'badge ' + cls;
+  $('srcBadge').textContent = stale ? '缓存降级' : '成交明细';
+  $('srcBadge').className = 'badge ' + (stale ? 'warn' : 'ok');
+  $('sampleBadge').textContent = `样本 ${d.samples || 0} 笔`;
+  $('healed').textContent = d.healed && d.healed.length ? `自愈：${d.healed.join(' / ')}` : '';
+}
+
+async function load(manual = false) {
+  $('refresh').disabled = true;
+  if (manual) { $('refresh').textContent = '刷新中…'; $('statusText').textContent = '刷新中'; }
+  try {
+    const r = await fetch('./data.json?_=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    render(await r.json());
+  } catch (e) {
+    $('statusText').textContent = hasData ? '读取失败' : '还没有数据';
+    $('dot').className = 'dot stale';
+    if (!hasData) $('updated').textContent = String(e.message || e).slice(0, 50);
+  } finally {
+    $('refresh').disabled = false;
+    $('refresh').textContent = '刷新';
+    left = Math.round(every / 1000);
+    $('count').textContent = left + 's';
+  }
+}
+
+function schedule() {
+  clearInterval(timer); clearInterval(tick);
+  if (!auto) { $('count').textContent = '暂停'; return; }
+  left = Math.round(every / 1000);
+  $('count').textContent = left + 's';
+  tick = setInterval(() => { left--; $('count').textContent = Math.max(left, 0) + 's'; }, 1000);
+  timer = setInterval(() => load(), every);
+}
+
+$('seg').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || b.classList.contains('off')) return;
+  league = b.dataset.k;
+  [...$('seg').children].forEach((x) => x.classList.toggle('on', x === b));
+  load();
+});
+$('refresh').onclick = () => load(true);
+$('auto').onclick = () => {
+  auto = !auto;
+  $('auto').textContent = '自动刷新：' + (auto ? '开' : '关');
+  schedule(); if (auto) load();
+};
+$('repoLink').href = location.hostname.endsWith('github.io')
+  ? `https://github.com/${location.hostname.split('.')[0]}/${location.pathname.split('/')[1]}`
+  : 'https://github.com/';
+
+load();
+schedule();
+setInterval(() => { if (hasData && $('statusText').textContent !== '抓取中断') $('statusText').textContent = $('statusText').textContent; }, 30000);
+</script>
+</body>
+</html>
