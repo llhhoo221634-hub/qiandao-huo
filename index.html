@@ -101,7 +101,12 @@
   td b{font-weight:600;color:var(--ink)}
   .spec{font-size:12.5px;line-height:1.35}
 
-  .rowlist{display:flex;flex-direction:column}
+  .rowlist{display:flex;flex-direction:column;position:relative}
+  .rowlist.clip{max-height:186px;overflow:hidden}
+  .rowlist.clip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:54px;
+    background:linear-gradient(to bottom,transparent,var(--card));pointer-events:none}
+  .toggle{font-size:11.5px;color:var(--accent);cursor:pointer;user-select:none;font-weight:500;padding:2px 0 2px 6px}
+  .toggle:active{opacity:.6}
   .trade{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:11px 14px;border-top:1px solid var(--line2)}
   .trade:first-child{border-top:0}
   .trade .t{font-size:11.5px;color:var(--muted)}
@@ -125,7 +130,7 @@
   .badge.warn{color:#a9772a;border-color:rgba(201,162,39,.35);background:rgba(201,162,39,.1)}
   .badge.up{color:var(--up)} .badge.down{color:var(--down)} .badge.flat{color:var(--muted)}
   .hidden{display:none!important}
-  footer code{word-break:break-all}
+  footer code{white-space:nowrap}
 
   /* 平板/桌面：放宽并分两列 */
   @media (min-width:820px){
@@ -186,7 +191,7 @@
     </table></div>
   </div>
   <div>
-    <h2>最近成交 <span style="font-weight:400">时间倒序</span></h2>
+    <h2>最近成交 <span class="toggle" id="tradeToggle">展开 12 条 ▾</span></h2>
     <div class="box rowlist" id="trades"></div>
   </div>
 </div>
@@ -227,7 +232,11 @@ const timeAgo = (ms) => {
 const clock = (ts) => new Date(ts).toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
 const dayStr = (ts) => new Date(ts).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
 
-let D = null, league = '赛季', range = '24h', auto = true, tick = null, left = 60, inflight = false;
+let D = null, league = '赛季', range = '24h', auto = true, tick = null, left = 60, inflight = false, tradeOpen = false;
+
+document.addEventListener('click', (e) => {
+  if (e.target.id === 'tradeToggle') { tradeOpen = !tradeOpen; render(); }
+});
 
 for (const btn of $('seg').children) {
   btn.onclick = () => {
@@ -393,6 +402,9 @@ function render() {
 
   // 最近成交
   const tr = (D.trades || []).filter((t) => t.league === league).slice(0, 12);
+  $('trades').classList.toggle('clip', !tradeOpen && tr.length > 3);
+  if (!tr.length) $('trades').classList.remove('clip');
+  $('tradeToggle').textContent = tr.length ? (tradeOpen ? '收起 ▴' : `展开 ${tr.length} 条 ▾`) : '';
   $('trades').innerHTML = tr.length
     ? tr.map((t) => `<div class="trade">
         <div><div class="t">${clock(t.ts)} · ${fmtInt(t.fire)} 火</div><div class="s">${t.spec.replace(/\//g, ' · ')}</div></div>
