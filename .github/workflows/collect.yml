@@ -1,0 +1,43 @@
+name: 采集价格
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"   # 每 10 分钟（GitHub 的高峰期可能延迟几分钟）
+  workflow_dispatch:          # 支持手动触发
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装依赖
+        working-directory: collector
+        run: npm install --no-audit --no-fund
+
+      - name: 抓一次价
+        working-directory: collector
+        env:
+          HUO_ROOT: ${{ github.workspace }}/collector
+          HUO_CSV: ${{ github.workspace }}/history.csv
+        run: node collect.mjs
+
+      - name: 提交数据
+        run: |
+          git config user.name "price-bot"
+          git config user.email "price-bot@users.noreply.github.com"
+          rm -rf collector/node_modules
+          git add data.json history.csv collector/state || true
+          git diff --cached --quiet || git commit -m "chore: price $(date -u +%FT%TZ)"
+          git push
