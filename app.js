@@ -35,7 +35,7 @@ for (const btn of $('ranges').children) {
   btn.onclick = () => {
     range = btn.dataset.r;
     for (const b of $('ranges').children) b.classList.toggle('on', b === btn);
-    drawChart();
+    drawChart(); drawGauge();
   };
 }
 
@@ -61,61 +61,57 @@ function series() {
 function drawChart() {
   const svg = $('chart');
   const pts = series();
-  const W = 320, H = 150, PL = 36, PR = 8, PT = 10, PB = 18;
+  const W = 320, H = 112, PL = 4, PR = 4, PT = 10, PB = 14;
   if (pts.length < 2) {
-    svg.innerHTML = `<text x="160" y="82" text-anchor="middle" class="axis">样本不足，等待更多成交</text>`;
+    svg.innerHTML = `<text x="160" y="60" text-anchor="middle" class="axis">样本不足，等待更多成交</text>`;
     return;
   }
-  // 轻微平滑（3 点居中均值）：早期历史是按单笔成交记的，保留形状但去掉毛刺
-  if (pts.length >= 5) {
-    const raw = pts.map((p) => p.v);
-    for (let i = 1; i < pts.length - 1; i++) {
-      pts[i] = { ...pts[i], v: +(((raw[i - 1] + raw[i] * 2 + raw[i + 1]) / 4).toFixed(3)) };
-    }
-  }
-  const vs = pts.map((p) => p.v);
-  let lo = Math.min(...vs), hi = Math.max(...vs);
-  const pad = (hi - lo) * 0.18 || hi * 0.02 || 1;
+  const raw = pts.map((p) => p.v);
+  let lo = Math.min(...raw), hi = Math.max(...raw);
+  const pad = (hi - lo) * 0.16 || hi * 0.02 || 1;
   lo -= pad; hi += pad;
   const x = (i) => PL + (i / (pts.length - 1)) * (W - PL - PR);
   const y = (v) => PT + (1 - (v - lo) / (hi - lo)) * (H - PT - PB);
-  const line = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
-  const area = `${line} L${x(pts.length - 1).toFixed(1)},${H - PB} L${PL},${H - PB} Z`;
 
-  // 网格：3 条水平线
+  // 余烬条：每分钟一根细柱，柱顶连成价格形状；最新一根用火色
+  // 点太多会糊成一团：按列聚合到约 100 根，保留每分钟的真实高低
+  const COLS = 100;
+  const cols = Math.min(COLS, pts.length);
+  const bucket = [];
+  for (let c = 0; c < cols; c++) {
+    const a = Math.floor((c * pts.length) / cols);
+    const b = Math.max(a + 1, Math.floor(((c + 1) * pts.length) / cols));
+    const seg = pts.slice(a, b);
+    bucket.push({ v: seg.reduce((s, p) => s + p.v, 0) / seg.length, last: b >= pts.length });
+  }
+  const step = (W - PL - PR) / cols;
+  const bw = Math.max(1, step * 0.5);
+  let bars = '';
+  bucket.forEach((p, i) => {
+    const yy = y(p.v);
+    bars += `<rect x="${(PL + i * step + (step - bw) / 2).toFixed(2)}" y="${yy.toFixed(2)}" width="${bw.toFixed(2)}"
+      height="${(H - PB - yy).toFixed(2)}" fill="${p.last ? 'var(--flame)' : 'var(--kindle)'}"
+      opacity="${p.last ? 1 : 0.5}"/>`;
+  });
+
   let grid = '';
   for (let i = 0; i <= 2; i++) {
     const v = lo + (hi - lo) * (i / 2);
     const yy = y(v);
-    grid += `<line x1="${PL}" x2="${W - PR}" y1="${yy}" y2="${yy}" stroke="var(--line2)" stroke-width="1"/>`;
-    grid += `<text x="${PL - 6}" y="${yy + 3}" text-anchor="end" class="axis">${Math.round(v)}</text>`;
+    grid += `<line x1="${PL}" x2="${W - PR}" y1="${yy.toFixed(1)}" y2="${yy.toFixed(1)}"
+      stroke="var(--seam2)" stroke-width="1"/>`;
   }
+
   const last = pts[pts.length - 1];
-  const first = pts[0];
-  const up = last.v >= first.v;
-  const col = up ? 'var(--up)' : 'var(--down)';
+  const axis = `<text x="${PL}" y="${H - 3}" class="axis">${range === '24h' ? clock(pts[0].t)
+    : new Date(pts[0].t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>
+    <text x="${W - PR}" y="${H - 3}" text-anchor="end" class="axis">${range === '24h' ? clock(last.t)
+    : new Date(last.t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>`;
 
-  let xlab = '';
-  if (range === '24h') {
-    xlab = `<text x="${PL}" y="${H - 4}" class="axis">${clock(first.t)}</text>
-            <text x="${W - PR}" y="${H - 4}" text-anchor="end" class="axis">${clock(last.t)}</text>`;
-  } else {
-    xlab = `<text x="${PL}" y="${H - 4}" class="axis">${new Date(first.t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>
-            <text x="${W - PR}" y="${H - 4}" text-anchor="end" class="axis">${new Date(last.t).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })}</text>`;
-  }
+  svg.innerHTML = `${grid}${bars}
+    <circle cx="${(PL + (cols - 1) * step + step / 2).toFixed(1)}" cy="${y(bucket[bucket.length - 1].v).toFixed(1)}"
+      r="2.6" fill="var(--flame)"/>${axis}`;
 
-  svg.innerHTML = `
-    <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${col}" stop-opacity=".22"/>
-      <stop offset="1" stop-color="${col}" stop-opacity="0"/>
-    </linearGradient></defs>
-    ${grid}
-    <path d="${area}" fill="url(#g)"/>
-    <path d="${line}" fill="none" stroke="${col}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="${x(pts.length - 1)}" cy="${y(last.v)}" r="3.2" fill="${col}"/>
-    ${xlab}`;
-
-  // 触摸查看
   svg.onpointermove = (e) => {
     const r = svg.getBoundingClientRect();
     const rx = ((e.clientX - r.left) / r.width) * W;
@@ -125,9 +121,23 @@ function drawChart() {
     tip.style.opacity = 1;
     tip.style.left = (x(i) / W * 100) + '%';
     tip.style.top = (y(p.v) / H * 100) + '%';
-    tip.textContent = `${range === '24h' ? clock(p.t) : new Date(p.t).toLocaleDateString('zh-CN')} · ${fmt(p.v)} 火`;
+    tip.textContent = `${range === '24h' ? clock(p.t) : new Date(p.t).toLocaleDateString('zh-CN')}　${fmt(p.v)} 火`;
   };
   svg.onpointerleave = () => { $('tip').style.opacity = 0; };
+}
+
+// 刻度尺：把当前价放回区间里，指针位置本身就是一个信息
+function drawGauge() {
+  const pts = series();
+  if (!pts.length) return;
+  const vs = pts.map((p) => p.v);
+  let lo = Math.min(...vs), hi = Math.max(...vs);
+  const price = pick().cur.fire_per_yuan ?? D.fire_per_yuan;
+  if (!(hi > lo)) { hi = lo + 1; }
+  const pct = Math.max(1.5, Math.min(98.5, ((price - lo) / (hi - lo)) * 100));
+  $('gaugePin').style.left = pct + '%';
+  $('gaugeLow').textContent = fmt(lo, 0);
+  $('gaugeHigh').textContent = fmt(hi, 0);
 }
 
 function deltas() {
@@ -170,18 +180,18 @@ function render() {
     $('change').textContent = '—'; $('changeFrom').textContent = '数据不足';
   }
 
-  $('hl').textContent = cur.low_fire_per_yuan
-    ? `${fmt(cur.low_fire_per_yuan, 0)} – ${fmt(cur.high_fire_per_yuan, 0)}`
-    : '—';
-  $('hlRange').textContent = `近 ${cur.samples || 0} 笔`;
-  $('lastTrade').textContent = fmt(D.last_fire_per_yuan ?? main.last_fire_per_yuan ?? price, 2);
-  $('lastTime').textContent = (D.last_trade_time || main.last_trade_time || '').replace(/^\d{4}\//, '');
-  if (D.ref_window_min) $('heroLabel').textContent = `1 元可购 · 近 ${D.ref_window_min} 分钟均价`;
+  $('wavg').textContent = fmt(cur.wavg_fire_per_yuan ?? price, 2);
+  $('hlRange').textContent = cur.low_fire_per_yuan
+    ? `区间 ${fmt(cur.low_fire_per_yuan, 0)}–${fmt(cur.high_fire_per_yuan, 0)}`
+    : '按成交量加权';
+  $('lastTrade').textContent = fmt(D.last_fire_per_yuan ?? price, 2);
+  $('lastTime').textContent = (D.last_trade_time || '').replace(/^\d{4}\//, '');
+  if (D.ref_window_min) $('heroLabel').textContent = `1 元可购，近 ${D.ref_window_min} 分钟均价`;
   $('median').textContent = fmt(cur.median_fire_per_yuan ?? price, 2);
-  $('volYuan').innerHTML = `${fmtInt(D.volume_yuan)} <small>元</small>`;
-  $('volFire').textContent = `${fmt(D.volume_fire / 10000, 1)} 万火 · ${D.samples || 0} 笔`;
-  $('dataLen').innerHTML = `${D.total_days || (D.daily || []).length} <small>天</small>`;
-  $('dataLenSub').textContent = `${fmtInt(D.total_points || 0)} 个采样点 · 每分钟`;
+  $('volYuan').textContent = `${fmtInt(D.volume_yuan)} 元`;
+  $('volFire').textContent = `${fmt(D.volume_fire / 10000, 1)} 万火`;
+  $('dataLen').textContent = `${D.total_days || (D.daily || []).length} 天`;
+  $('dataLenSub').textContent = `${fmtInt(D.total_points || 0)} 个`;
 
   if (other && !D.leagues?.[league]?.fire_per_yuan) {
     $('changeFrom').textContent = '该联赛暂无成交';
@@ -220,7 +230,7 @@ function render() {
         const txt = pct == null ? '—' : `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
         return `<tr><td>${esc(String(r.d || '').slice(5))}</td><td><b>${fmt(r.avg ?? r.close, 2)}</b></td>
         <td style="color:var(--muted)">${fmt(r.low, 0)} / ${fmt(r.high, 0)}</td>
-        <td><span class="badge ${cls}" style="border:0;background:transparent;padding:0">${txt}</span></td></tr>`;
+        <td><span class="${cls}">${txt}</span></td></tr>`;
       }).join('')
     : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:20px">今天刚开始记录</td></tr>`;
 
@@ -247,6 +257,7 @@ function render() {
   }
 
   drawChart();
+  drawGauge();
 }
 
 const pad2 = (n) => String(n).padStart(2, '0');
