@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f4f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="初火价">
 <title>初火源质 · 实时价</title>
 <meta name="theme-color" content="#f7f5f2">
 <meta name="referrer" content="no-referrer">
@@ -68,6 +72,9 @@
   .delta.flat{color:var(--muted);background:var(--line2)}
   .sub{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;font-size:12.5px;color:var(--muted);gap:10px}
   .sub b{color:var(--ink2);font-weight:500}
+  .clock{display:inline-flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums}
+  .clock i{font-style:normal;font-size:11px;color:var(--muted);opacity:.8}
+  .clock b{font-size:12.5px;letter-spacing:.2px}
 
   .chart-wrap{margin:14px -6px 0;position:relative}
   svg.chart{display:block;width:100%;height:150px;overflow:visible}
@@ -161,7 +168,7 @@
       <button data-k="非赛季">非赛季</button>
     </div>
   </div>
-  <div class="sub"><span>1 火 ≈ <b id="yuan">—</b> 元</span><span id="updated">—</span></div>
+  <div class="sub"><span>1 火 ≈ <b id="yuan">—</b> 元</span><span class="clock"><i>北京时间</i><b id="clock">—</b></span></div>
 
   <div class="chart-wrap">
     <svg class="chart" id="chart" viewBox="0 0 320 150" preserveAspectRatio="none"></svg>
@@ -215,7 +222,7 @@
   <div class="badges" id="badges"></div>
   <div>
     数据源：千岛 <code>get-spu-trading-history-list</code> 成交明细，主价取最新一笔，均值/中位数自算。<br>
-    手机端每 10 分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/2026-11.jsonl</code> 这类文件，日线永久累积在 <code>daily.json</code>。<br>
+    手机端每分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/2026-11.jsonl</code> 这类文件，日线永久累积在 <code>daily.json</code>。<br>
     抓取失败时保留上一份并标记 STALE，不会静默伪装实时。
   </div>
 </footer>
@@ -366,7 +373,7 @@ function render() {
   const price = cur.fire_per_yuan ?? D.fire_per_yuan;
   $('main').textContent = fmt(price, 2);
   $('yuan').textContent = fmt(cur.yuan_per_fire ?? 1 / price, 6);
-  $('updated').textContent = cur.time || D.time || '';
+  tickClock();
 
   const d = deltas();
   const el = $('delta');
@@ -390,7 +397,7 @@ function render() {
   $('volYuan').innerHTML = `${fmtInt(D.volume_yuan)} <small>元</small>`;
   $('volFire').textContent = `${fmt(D.volume_fire / 10000, 1)} 万火 · ${D.samples || 0} 笔`;
   $('dataLen').innerHTML = `${D.total_days || (D.daily || []).length} <small>天</small>`;
-  $('dataLenSub').textContent = `${fmtInt(D.total_points || 0)} 个采样点 · 每 10 分钟`;
+  $('dataLenSub').textContent = `${fmtInt(D.total_points || 0)} 个采样点 · 每分钟`;
 
   if (other && !D.leagues?.[league]?.fire_per_yuan) {
     $('changeFrom').textContent = '该联赛暂无成交';
@@ -457,10 +464,22 @@ function render() {
   drawChart();
 }
 
+const pad2 = (n) => String(n).padStart(2, '0');
+function beijingNow() {
+  const k = new Date(Date.now() + 8 * 3600000);   // UTC+8，用 getUTC* 取值避免二次偏移
+  return `${k.getUTCFullYear()}/${pad2(k.getUTCMonth() + 1)}/${pad2(k.getUTCDate())} ${pad2(k.getUTCHours())}:${pad2(k.getUTCMinutes())}:${pad2(k.getUTCSeconds())}`;
+}
+function tickClock() {
+  const el = $('clock');
+  if (el) el.textContent = beijingNow();
+}
+
 function setStatus(text, kind) {
   $('status').textContent = text;
   $('pill').className = 'pill' + (kind ? ' ' + kind : '');
 }
+
+const LOCAL = location.hostname === '127.0.0.1' || location.hostname === 'localhost' || location.protocol === 'file:';
 
 async function load(force) {
   if (inflight) return;
@@ -468,6 +487,10 @@ async function load(force) {
   $('refresh').disabled = true;
   if (force) setStatus('刷新中');
   try {
+    // 本地版：先让服务端真去抓一次（GitHub 版没有这个接口，跳过）
+    if (force && LOCAL) {
+      await fetch('/api/refresh', { method: 'POST', signal: AbortSignal.timeout(30000) }).catch(() => {});
+    }
     const r = await fetch('./data.json?_=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(15000) });
     if (!r.ok) throw new Error('HTTP ' + r.status);
     D = await r.json();
@@ -490,11 +513,13 @@ $('auto').onclick = () => {
   $('auto').textContent = '自动刷新：' + (auto ? '开' : '关');
   left = 60;
 };
+setInterval(tickClock, 1000);
+
 tick = setInterval(() => {
   if (!auto) { $('count').textContent = '暂停'; return; }
   left--;
   $('count').textContent = Math.max(left, 0) + 's';
-  if (left <= 0) load(false);
+  if (left <= 0) load(LOCAL);
 }, 1000);
 
 load(false);
