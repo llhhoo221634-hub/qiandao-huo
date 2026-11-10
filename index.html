@@ -32,7 +32,7 @@
     background:var(--bg); color:var(--ink);
     font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;
     font-variant-numeric:tabular-nums;
-    padding:18px 16px 40px; max-width:560px; margin:0 auto;
+    padding:18px 16px 128px; max-width:560px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
   }
   .num{font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
@@ -47,6 +47,38 @@
   .dot{width:6px;height:6px;border-radius:99px;background:var(--down);box-shadow:0 0 0 3px color-mix(in srgb,var(--down) 18%,transparent)}
   .pill.stale .dot{background:#c9a227;box-shadow:0 0 0 3px rgba(201,162,39,.18)}
   .pill.err .dot{background:var(--up);box-shadow:0 0 0 3px rgba(192,57,43,.18)}
+
+  /* ── mini 指标条 ── */
+  .mini{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+    border-radius:14px;overflow:hidden;margin:14px 0 12px}
+  .mini>div{background:var(--card);padding:9px 12px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+  .mini .k{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mini b{font-size:16.5px;font-weight:600;letter-spacing:-.01em}
+  .mini i{font-style:normal;font-size:10.5px;color:var(--muted);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ── tabs ── */
+  .tabs{display:flex;gap:3px;margin:0 0 10px;background:var(--line2);padding:3px;border-radius:13px}
+  .tabs button{flex:1;border:0;background:none;font:inherit;font-size:12.5px;color:var(--muted);
+    padding:8px 2px;border-radius:10px;cursor:pointer;transition:.16s;line-height:1.2}
+  .tabs button.on{background:var(--card);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .pane{display:none}
+  .pane.on{display:block;animation:fade .18s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(2px)}to{opacity:1;transform:none}}
+  .paneFoot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:12px;color:var(--muted);padding:8px 2px 6px}
+  .paneFoot.top{padding:2px 2px 8px}
+  .paneFoot a{color:var(--accent);text-decoration:none}
+  .note{font-size:11.5px;line-height:1.7;color:var(--muted);padding:4px 2px 0}
+  .note code{background:var(--line2);padding:1px 4px;border-radius:4px;white-space:nowrap}
+
+  /* ── 底部按钮 ── */
+  .acts{position:fixed;left:50%;transform:translateX(-50%);bottom:0;width:100%;max-width:560px;
+    display:flex;gap:8px;padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    background:color-mix(in srgb,var(--bg) 90%,transparent);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);z-index:20}
+  .acts button,.acts a{flex:1;white-space:nowrap;font-size:13px;padding:11px 6px;text-align:center;
+    text-decoration:none;display:flex;align-items:center;justify-content:center;min-width:0}
 
   /* ── hero ── */
   .card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
@@ -111,8 +143,9 @@
   .spec{font-size:12.5px;line-height:1.35}
 
   .rowlist{display:flex;flex-direction:column;position:relative}
-  .rowlist.clip{max-height:186px;overflow:hidden}
-  .rowlist.clip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:54px;
+  .rowlist{position:relative}
+  .rowlist.clip{max-height:268px;overflow:hidden}
+  .rowlist.clip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:48px;
     background:linear-gradient(to bottom,transparent,var(--card));pointer-events:none}
   .toggle{font-size:11.5px;color:var(--accent);cursor:pointer;user-select:none;font-weight:500;padding:2px 0 2px 6px}
   .toggle:active{opacity:.6}
@@ -149,6 +182,11 @@
     .big b{font-size:60px}
     svg.chart{height:170px}
   }
+  @media (min-width:820px){
+    body{max-width:720px}
+    .acts{max-width:720px}
+    .mini{grid-template-columns:repeat(4,1fr)}
+  }
 </style>
 </head>
 <body>
@@ -180,51 +218,67 @@
     <button data-r="30d">30 天</button>
     <button data-r="all">全部</button>
   </div>
-</div>
 
-<div class="grid">
-  <div class="cell"><div class="k" id="k1">较 24 小时前</div><div class="v" id="change">—</div><div class="x" id="changeFrom">—</div></div>
-  <div class="cell"><div class="k">区间高低</div><div class="v" id="hl">—</div><div class="x" id="hlRange">本窗口内</div></div>
-  <div class="cell"><div class="k">加权均价</div><div class="v" id="wavg">—</div><div class="x">按成交量加权</div></div>
-  <div class="cell"><div class="k">中位数</div><div class="v" id="median">—</div><div class="x">抗单笔异常</div></div>
-  <div class="cell"><div class="k">近 100 笔成交额</div><div class="v" id="volYuan">—</div><div class="x" id="volFire">—</div></div>
-  <div class="cell"><div class="k">数据量</div><div class="v" id="dataLen">—</div><div class="x" id="dataLenSub">—</div></div>
-</div>
-
-<div class="cols">
-  <div>
-    <h2>分规格 <span id="specHint" style="font-weight:400"></span></h2>
-    <div class="box"><table id="specTable">
-      <thead><tr><th>规格</th><th>火/元</th><th>笔数</th></tr></thead>
-      <tbody></tbody>
-    </table></div>
-  </div>
-  <div>
-    <h2>最近成交 <span class="toggle" id="tradeToggle">展开 12 条 ▾</span></h2>
-    <div class="box rowlist" id="trades"></div>
+  <div class="mini">
+    <div><span class="k" id="k1">较 24 小时前</span><b id="change">—</b><i id="changeFrom">—</i></div>
+    <div><span class="k">区间高低</span><b id="hl">—</b><i id="hlRange">本窗口内</i></div>
+    <div><span class="k">加权均价</span><b id="wavg">—</b><i>按成交量加权</i></div>
+    <div><span class="k">中位数</span><b id="median">—</b><i>抗单笔异常</i></div>
   </div>
 </div>
 
-<h2>每日历史 <span id="dailyHint" style="font-weight:400"></span><a href="./daily.json" target="_blank">daily.json ↗</a></h2>
-<div class="box"><table id="dailyTable">
-  <thead><tr><th>日期</th><th>均价</th><th>低/高</th><th>涨跌</th></tr></thead>
-  <tbody></tbody>
-</table></div>
+<div class="tabs" id="tabs">
+  <button data-t="trades" class="on">最近成交</button>
+  <button data-t="specs">分规格</button>
+  <button data-t="daily">每日历史</button>
+  <button data-t="meta">数据</button>
+</div>
+
+<section class="pane on" data-p="trades">
+  <div class="paneFoot top">
+    <span class="hint">按成交时间倒序</span>
+    <span class="toggle" id="tradeToggle">展开 12 条 ▾</span>
+  </div>
+  <div class="box rowlist" id="trades"></div>
+</section>
+
+<section class="pane" data-p="specs">
+  <div class="paneFoot top"><span class="hint">同一 SPU 下的成交品类</span><span class="hint" id="specHint"></span></div>
+  <div class="box"><table id="specTable">
+    <thead><tr><th>规格</th><th>火/元</th><th>笔数</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</section>
+
+<section class="pane" data-p="daily">
+  <div class="paneFoot top"><span class="hint" id="dailyHint"></span><a href="./daily.json" target="_blank">daily.json ↗</a></div>
+  <div class="box"><table id="dailyTable">
+    <thead><tr><th>日期</th><th>均价</th><th>低/高</th><th>涨跌</th></tr></thead>
+    <tbody></tbody>
+  </table></div>
+</section>
+
+<section class="pane" data-p="meta">
+  <div class="grid">
+    <div class="cell"><div class="k">近 100 笔成交额</div><div class="v" id="volYuan">—</div><div class="x" id="volFire">—</div></div>
+    <div class="cell"><div class="k">数据量</div><div class="v" id="dataLen">—</div><div class="x" id="dataLenSub">—</div></div>
+  </div>
+  <div class="note">
+    数据源：千岛 <code>get-spu-trading-history-list</code> 成交明细，主价取最新一笔，均值/中位数自算。<br>
+    手机端每分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/2026-11.jsonl</code>，日线累积在 <code>daily.json</code>，明细进 SQLite <code>store/price.db</code>。<br>
+    抓取失败时保留上一份并标记 STALE，不会静默伪装实时。
+  </div>
+</section>
 
 <div class="acts">
   <button class="primary" id="refresh">刷新</button>
-  <button id="auto">自动刷新：开</button>
-  <a id="csv" href="./history.csv" download>下载 CSV</a>
+  <button id="auto" title="自动刷新">自动 · 开</button>
+  <a id="csv" href="./history.csv" download title="下载 CSV">CSV</a>
   <a id="repo" href="https://github.com/llhhoo221634-hub/qiandao-huo" target="_blank" rel="noopener">仓库</a>
 </div>
 
 <footer>
   <div class="badges" id="badges"></div>
-  <div>
-    数据源：千岛 <code>get-spu-trading-history-list</code> 成交明细，主价取最新一笔，均值/中位数自算。<br>
-    手机端每分钟抓一次写入 <code>data.json</code>；原始采样按月存 <code>hist/2026-11.jsonl</code> 这类文件，日线永久累积在 <code>daily.json</code>。<br>
-    抓取失败时保留上一份并标记 STALE，不会静默伪装实时。
-  </div>
 </footer>
 
 <script>
@@ -413,8 +467,9 @@ function render() {
   // 最近成交
   const tr = (D.trades || []).filter((t) => t.league === league).slice(0, 12);
   $('trades').classList.toggle('clip', !tradeOpen && tr.length > 3);
+  $('trades').style.maxHeight = tradeOpen ? 'none' : '';
   if (!tr.length) $('trades').classList.remove('clip');
-  $('tradeToggle').textContent = tr.length ? (tradeOpen ? '收起 ▴' : `展开 ${tr.length} 条 ▾`) : '';
+  $('tradeToggle').textContent = tr.length ? (tradeOpen ? '收起 ▴' : `展开全部 ${tr.length} 条 ▾`) : '';
   $('trades').innerHTML = tr.length
     ? tr.map((t) => `<div class="trade">
         <div><div class="t">${clock(t.ts)} · ${fmtInt(t.fire)} 火</div><div class="s">${esc(t.spec).replace(/\//g, ' · ')}</div></div>
@@ -507,10 +562,17 @@ async function load(force) {
   }
 }
 
+document.getElementById('tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-t]');
+  if (!b) return;
+  for (const x of document.querySelectorAll('#tabs button')) x.classList.toggle('on', x === b);
+  for (const p of document.querySelectorAll('.pane')) p.classList.toggle('on', p.dataset.p === b.dataset.t);
+});
+
 $('refresh').onclick = () => load(true);
 $('auto').onclick = () => {
   auto = !auto;
-  $('auto').textContent = '自动刷新：' + (auto ? '开' : '关');
+  $('auto').textContent = '自动 · ' + (auto ? '开' : '关');
   left = 60;
 };
 setInterval(tickClock, 1000);
