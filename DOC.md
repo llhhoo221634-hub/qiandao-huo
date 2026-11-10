@@ -142,7 +142,7 @@ yuan_per_fire = +(1 / refPrice).toFixed(7);
 
 | 路径 | 内容 |
 |---|---|
-| `price.db` | SQLite 主库（1.8 MB）：`samples` **2149** 条、`trades` **7925** 条、`daily` 表 |
+| `price.db` | SQLite 主库（1.8 MB）：`samples` **2151** 条（赛季 1105 / 非赛季 1046）、`trades` **7927** 条、`daily` **3 天** |
 | `archive/2026-11.jsonl` | 按月追加的原始采样（每行一条，只增不减） |
 | `recent_trades.json` | 最近 100 笔缓存（增量取价用） |
 | `backups/` | 每日 DB 副本 |
