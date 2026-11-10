@@ -198,7 +198,7 @@
 <div class="card hero">
   <div class="hero-top">
     <div>
-      <div class="label">1 元可购</div>
+      <div class="label" id="heroLabel">1 元可购 · 近 10 分钟均价</div>
       <div class="big"><b id="main">—</b><i>火</i><span class="delta flat hidden" id="delta"></span></div>
     </div>
     <div class="seg" id="seg">
@@ -222,7 +222,7 @@
   <div class="mini">
     <div><span class="k" id="k1">较 24 小时前</span><b id="change">—</b><i id="changeFrom">—</i></div>
     <div><span class="k">区间高低</span><b id="hl">—</b><i id="hlRange">本窗口内</i></div>
-    <div><span class="k">加权均价</span><b id="wavg">—</b><i>按成交量加权</i></div>
+    <div><span class="k">最新一笔成交</span><b id="lastTrade">—</b><i id="lastTime">—</i></div>
     <div><span class="k">中位数</span><b id="median">—</b><i>抗单笔异常</i></div>
   </div>
 </div>
@@ -345,6 +345,13 @@ function drawChart() {
     svg.innerHTML = `<text x="160" y="82" text-anchor="middle" class="axis">样本不足，等待更多成交</text>`;
     return;
   }
+  // 轻微平滑（3 点居中均值）：早期历史是按单笔成交记的，保留形状但去掉毛刺
+  if (pts.length >= 5) {
+    const raw = pts.map((p) => p.v);
+    for (let i = 1; i < pts.length - 1; i++) {
+      pts[i] = { ...pts[i], v: +(((raw[i - 1] + raw[i] * 2 + raw[i + 1]) / 4).toFixed(3)) };
+    }
+  }
   const vs = pts.map((p) => p.v);
   let lo = Math.min(...vs), hi = Math.max(...vs);
   const pad = (hi - lo) * 0.18 || hi * 0.02 || 1;
@@ -446,7 +453,9 @@ function render() {
     ? `${fmt(cur.low_fire_per_yuan, 0)} – ${fmt(cur.high_fire_per_yuan, 0)}`
     : '—';
   $('hlRange').textContent = `近 ${cur.samples || 0} 笔`;
-  $('wavg').textContent = fmt(cur.wavg_fire_per_yuan ?? price, 2);
+  $('lastTrade').textContent = fmt(D.last_fire_per_yuan ?? main.last_fire_per_yuan ?? price, 2);
+  $('lastTime').textContent = (D.last_trade_time || main.last_trade_time || '').replace(/^\d{4}\//, '');
+  if (D.ref_window_min) $('heroLabel').textContent = `1 元可购 · 近 ${D.ref_window_min} 分钟均价`;
   $('median').textContent = fmt(cur.median_fire_per_yuan ?? price, 2);
   $('volYuan').innerHTML = `${fmtInt(D.volume_yuan)} <small>元</small>`;
   $('volFire').textContent = `${fmt(D.volume_fire / 10000, 1)} 万火 · ${D.samples || 0} 笔`;
