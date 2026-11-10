@@ -14,6 +14,10 @@ const clock = (ts) => new Date(ts).toLocaleTimeString('zh-CN', { hour12: false, 
 const dayStr = (ts) => new Date(ts).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
 
 let D = null, league = '赛季', range = '24h', auto = true, tick = null, left = 60, inflight = false, tradeOpen = false;
+const LOCAL = location.hostname === '127.0.0.1' || location.hostname === 'localhost' || location.protocol === 'file:';
+const AUTO_MS = LOCAL ? 20000 : 60000;   // 本地版 20 秒一刷（只重读文件，不额外出网）
+let lastLoad = 0;               // 上次成功取数的时间（墙钟，抗浏览器冻结）
+let lastCount = 0;              // 上一秒显示的秒数，避免每秒重排
 
 document.addEventListener('click', (e) => {
   if (e.target.id === 'tradeToggle') { tradeOpen = !tradeOpen; render(); }
@@ -250,6 +254,12 @@ function beijingNow() {
   const k = new Date(Date.now() + 8 * 3600000);   // UTC+8，用 getUTC* 取值避免二次偏移
   return `${k.getUTCFullYear()}/${pad2(k.getUTCMonth() + 1)}/${pad2(k.getUTCDate())} ${pad2(k.getUTCHours())}:${pad2(k.getUTCMinutes())}:${pad2(k.getUTCSeconds())}`;
 }
+function tickAge() {
+  if (!D || !D.at) return;
+  const s = Math.max(0, Math.round((Date.now() - D.at) / 1000));
+  const el = $('age');
+  if (el) el.textContent = s < 60 ? s + 's前' : Math.round(s / 60) + '分前';
+}
 function tickClock() {
   const el = $('clock');
   if (el) el.textContent = beijingNow();
@@ -260,8 +270,6 @@ function setStatus(text, kind) {
   $('pill').className = 'pill' + (kind ? ' ' + kind : '');
 }
 
-const LOCAL = location.hostname === '127.0.0.1' || location.hostname === 'localhost' || location.protocol === 'file:';
-
 async function load(force) {
   if (inflight) return;
   inflight = true;
@@ -269,7 +277,8 @@ async function load(force) {
   if (force) setStatus('刷新中');
   try {
     // 本地版：先让服务端真去抓一次（GitHub 版没有这个接口，跳过）
-    if (force && LOCAL) {
+    const staleMs = D?.at ? Date.now() - D.at : Infinity;
+    if (LOCAL && (force || staleMs > 55000)) {
       await fetch('/api/refresh', { method: 'POST', signal: AbortSignal.timeout(30000) }).catch(() => {});
     }
     const r = await fetch('./data.json?_=' + Date.now(), { cache: 'no-store', signal: AbortSignal.timeout(15000) });
@@ -283,8 +292,9 @@ async function load(force) {
   } finally {
     inflight = false;
     $('refresh').disabled = false;
-    left = 60;
-    $('count').textContent = '60s';
+    lastLoad = Date.now();
+    left = AUTO_MS / 1000;
+    $('count').textContent = left + 's';
   }
 }
 
@@ -302,12 +312,26 @@ $('auto').onclick = () => {
   left = 60;
 };
 setInterval(tickClock, 1000);
+setInterval(tickAge, 1000);
 
 tick = setInterval(() => {
   if (!auto) { $('count').textContent = '暂停'; return; }
-  left--;
-  $('count').textContent = Math.max(left, 0) + 's';
-  if (left <= 0) load(LOCAL);
+  // 用墙钟算“还差多久”，而不是自减计数器：
+  // 手机浏览器冻结后台定时器时，恢复后的第一个 tick 会立刻发现已超时并补一次
+  const due = AUTO_MS - (Date.now() - lastLoad);
+  const sec = Math.max(0, Math.ceil(due / 1000));
+  if (sec !== lastCount) { lastCount = sec; $('count').textContent = sec + 's'; }
+  if (due <= 0) load(true);
 }, 1000);
+
+// 回到前台 / 从后台恢复时，数据过期就立刻取一次
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && Date.now() - lastLoad > AUTO_MS) load(true);
+});
+window.addEventListener('pageshow', () => { if (Date.now() - lastLoad > AUTO_MS) load(true); });
+// 手指碰屏幕（滚动、点标签）时如果已经过期，也补一次，用户永远不用点“刷新”
+document.addEventListener('touchstart', () => {
+  if (Date.now() - lastLoad > AUTO_MS) load(true);
+}, { passive: true });
 
 load(false);
