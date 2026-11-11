@@ -1,0 +1,21 @@
+name: yxdr-collect-b
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 3,9,15,21 * * *'
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: loop
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MINUTES: '346'
+        run: node cloud/yxdr/loop.mjs
