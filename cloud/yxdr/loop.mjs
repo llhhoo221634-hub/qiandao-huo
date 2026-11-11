@@ -4,7 +4,7 @@ const TOK=process.env.GH_TOKEN||'';
 const REPO='llhhoo221634-hub/qiandao-huo', BRANCH='yxdr-data';
 const MINUTES=Number(process.env.MINUTES||346);
 const END=Date.now()+MINUTES*60e3;
-const FLUSH_MS=5*60e3;
+const FLUSH_MS=120e3;
 let buf=[], lastFlush=0, ok=0, fail=0;
 
 async function ghApi(path,opt={}){
