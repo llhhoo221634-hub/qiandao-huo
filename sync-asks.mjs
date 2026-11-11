@@ -11,7 +11,7 @@ const TOK=(process.env.GH_TOKEN||(fs.existsSync('/root/workspace/gh/.token')?fs.
 const force=process.argv.includes('--force');
 if(!force && fs.existsSync(STAMP)){
   const age=(Date.now()-fs.statSync(STAMP).mtimeMs)/1000;
-  if(age<240){ console.log(JSON.stringify({skipped:true,ageSec:Math.round(age)})); process.exit(0); }
+  if(age<120){ console.log(JSON.stringify({skipped:true,ageSec:Math.round(age)})); process.exit(0); }
 }
 
 const db=new DatabaseSync(DBP);
